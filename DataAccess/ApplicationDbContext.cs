@@ -6,7 +6,8 @@ namespace DataAccess
 {
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options)
         {
         }
         public DbSet<Admin> Admins { get; set; }
@@ -20,5 +21,24 @@ namespace DataAccess
         public DbSet<Test> Tests { get; set; }
         public DbSet<TestResult> TestResults { get; set; }
         public DbSet<User> Users { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+
+            modelBuilder.Entity<Doctor>()
+                .HasOne(d => d.User)
+                .WithMany()
+                .HasForeignKey(d => d.UserID)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<TestResult>()
+                .HasOne(tr => tr.Test)
+                .WithMany()
+                .HasForeignKey(tr => tr.TestID)
+                .OnDelete(DeleteBehavior.Restrict);
+
+        }
     }
 }
