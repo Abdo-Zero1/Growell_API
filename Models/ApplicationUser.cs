@@ -10,5 +10,6 @@ namespace Models
     public class ApplicationUser : IdentityUser
     {
         public string Adderss { get; set; }
+        public string ProfilePicturePath { get; set; }
     }
 }

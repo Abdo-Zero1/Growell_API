@@ -14,6 +14,14 @@ namespace Growell_API
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy(name: "MyAllowSpecificOrigins",
+                                  policy =>
+                                  {
+                                      policy.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod();
+                                  });
+            });
             // Add services to the container.
             builder.Services.AddAutoMapper(typeof(Program));
 
@@ -39,9 +47,10 @@ namespace Growell_API
             }
 
             app.UseHttpsRedirection();
-
+            app.UseAuthentication();
             app.UseAuthorization();
 
+            app.UseStaticFiles(); 
 
             app.MapControllers();
 

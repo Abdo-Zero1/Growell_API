@@ -9,6 +9,7 @@ namespace Growell_API.Profiles
         public ApplicationUserProfiles()
         {
          CreateMap<ApplicationUserDTO, ApplicationUser>()
+        .ForMember(dest => dest.Id, opt => opt.Ignore())
         .ForMember(dest => dest.UserName, option => option.MapFrom(src => $"{src.FristName}_{src.LastName}"))
         .ForMember(dest => dest.Adderss, option => option.MapFrom(src => src.Address)); 
         }
