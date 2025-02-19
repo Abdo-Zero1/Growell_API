@@ -16,7 +16,7 @@ namespace Growell_API
 
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy(name: "MyAllowSpecificOrigins",
+                options.AddPolicy(name: "AllowAll",
                                   policy =>
                                   {
                                       policy.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod();
@@ -36,6 +36,15 @@ namespace Growell_API
           .AddEntityFrameworkStores<ApplicationDbContext>();
 
             builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+            builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
+            builder.Services.AddScoped<IBookEventRepository, BookEventRepository>();
+            builder.Services.AddScoped<IVideoEventRepository, VideoEventRepository>();
+            builder.Services.AddScoped<IGameEventRepository, GameEventRepository>();
+            builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
+            builder.Services.AddScoped<ITestRepository, TestRepository>();
+            builder.Services.AddScoped<ITestResultRepository, TestResultRepository>();
+            builder.Services.AddScoped<IDevelopmentStatusRepository, DevelopmentStatusRepository>();
+            builder.Services.AddScoped<IChildRepository, ChildRepository>();
 
             var app = builder.Build();
 
@@ -48,6 +57,7 @@ namespace Growell_API
 
             app.UseHttpsRedirection();
             app.UseAuthentication();
+            app.UseCors("AllowAll");
             app.UseAuthorization();
 
             app.UseStaticFiles(); 

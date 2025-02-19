@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 
 namespace DataAccess.Repository
 {
-    public class UserRepository : Repository<User>, IUserRepository
+    public class BookEventRepository : Repository<BookEvent>, IBookEventRepository
     {
         private readonly ApplicationDbContext dbContext;
 
-        public UserRepository(ApplicationDbContext dbContext) : base(dbContext)
+        public BookEventRepository(ApplicationDbContext dbContext) : base(dbContext)
         {
             this.dbContext = dbContext;
         }

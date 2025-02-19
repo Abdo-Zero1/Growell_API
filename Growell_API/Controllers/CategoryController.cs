@@ -11,19 +11,22 @@ namespace Growell_API.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize(Roles = $"{SD.AdminRole}")]
+
     public class CategoryController : ControllerBase
     {
         private readonly ICategoryRepository categoryRepository;
+        private readonly ITestRepository testRepository;
 
-        public CategoryController(ICategoryRepository categoryRepository)
+        public CategoryController(ICategoryRepository categoryRepository, ITestRepository testRepository)
         {
             this.categoryRepository = categoryRepository;
+            this.testRepository = testRepository;
         }
 
         [HttpGet]
         public ActionResult Index()
         {
-            var Category = categoryRepository.Get().ToList();
+            var Category = categoryRepository.Get(Include: [t=>t.Tests]).ToList();
             return Ok(Category);
         }
 

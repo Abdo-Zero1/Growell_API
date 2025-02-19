@@ -21,17 +21,17 @@ namespace DataAccess.Repository
                 dbSet = dbContext.Set<T>();
 
             }
-            public IEnumerable<T> Get(Expression<Func<T, object>>[]? Include = null, Expression<Func<T, bool>>? expressio = null, bool tracked = true)
+            public IEnumerable<T> Get(Expression<Func<T, object>>[]? includeProps = null, Expression<Func<T, bool>>? expression = null, bool tracked = true)
 
             {
                 IQueryable<T> query = dbSet;
-                if (expressio != null)
+                if (expression != null)
                 {
-                    query = query.Where(expressio);
+                    query = query.Where(expression);
                 }
-                if (Include != null)
+                if (includeProps != null)
                 {
-                    foreach (var prop in Include)
+                    foreach (var prop in includeProps)
                     {
 
                         query = query.Include(prop);

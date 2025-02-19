@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace DataAccess.Repository.IRepository
 {
-    public interface ITestResultRepository: IRepository<TestResult>
+    public interface IVideoEventRepository: IRepository<VideoEvent>
     {
     }
 }

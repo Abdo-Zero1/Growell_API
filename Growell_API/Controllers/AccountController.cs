@@ -11,7 +11,7 @@ using Utility;
 
 namespace Growell_API.Controllers
 {
-    [Route("api/Account[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
 
     public class AccountController : ControllerBase
@@ -41,6 +41,7 @@ namespace Growell_API.Controllers
             }
             if (ModelState.IsValid)
             {
+
                 //ApplicationUser user = new()
                 //{
                 //    UserName = $"{userDTO.FristName}_{userDTO.LastName}",
@@ -49,7 +50,8 @@ namespace Growell_API.Controllers
                 //};
 
                 var user = mapper.Map<ApplicationUser>(userDTO);
-                user.ProfilePicturePath = "/images/images.jpg"; 
+
+                user.ProfilePicturePath = "/images/images.jpg";
 
                 var result = await userManager.CreateAsync(user, userDTO.Password);
 
@@ -57,12 +59,13 @@ namespace Growell_API.Controllers
                 {
                     await userManager.AddToRoleAsync(user, SD.UserRole);
                     await signInManager.SignInAsync(user, false);
-                    return Ok(new { message = "the user has been successfully registered!" });
+                    return Ok(new { message = "The user has been successfully registered!" });
                 }
                 return BadRequest(result.Errors);
             }
             return BadRequest(userDTO);
         }
+
 
         [HttpPost("Login")]
         public async Task<IActionResult> Login(LoginDTO loginDTo)
@@ -209,7 +212,7 @@ namespace Growell_API.Controllers
             {
                 return Ok(new
                 {
-                    message = "Profile updated successfully.",
+                    message = "Profile updated successfully",
                     userData = new
                     {
                         user.UserName,
@@ -219,18 +222,32 @@ namespace Growell_API.Controllers
                 });
             }
 
-            return BadRequest("Failed to update user profile.");
+            return BadRequest("Failed to update user profile");
         }
 
+        [HttpDelete("DeleteAccount")]
+        public async Task<IActionResult> DeleteAccount()
+        {
+            var userId = User.FindFirst("sub")?.Value;
+            if (userId == null)
+                return Unauthorized("User not authorized");
 
+            var user = await userManager.FindByIdAsync(userId);
+            if (user == null)
+                return NotFound("User not found");
 
+            var result = await userManager.DeleteAsync(user);
+            if (result.Succeeded)
+            {
+                return Ok(new { message = "Account deleted successfully" });
+            }
 
-
-
-
-
-
-
-
+            return BadRequest("Failed to delete account");
+        }
     }
 }
+
+    
+
+
+

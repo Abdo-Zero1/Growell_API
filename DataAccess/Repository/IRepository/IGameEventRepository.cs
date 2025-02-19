@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace DataAccess.Repository.IRepository
 {
-    public interface IUserRepository:IRepository<User>
+    public interface IGameEventRepository: IRepository<GameEvent>
     {
     }
 }

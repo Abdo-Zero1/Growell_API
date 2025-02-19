@@ -12,7 +12,9 @@ namespace Models
         public string NameStatus { get; set; }
         public string Description { get; set; }
 
-        // العلاقة مع جدول الأطفال
+        // العلاقات
         public ICollection<Child> Children { get; set; }
+        public ICollection<BookEvent> BookEvents { get; set; }
+
     }
 }

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace DataAccess.Repository.IRepository
 {
-    public interface IAdminRepository: IRepository<Admin>
+    public interface IBookEventRepository: IRepository<BookEvent>
     {
     }
 }

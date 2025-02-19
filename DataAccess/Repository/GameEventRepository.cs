@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 
 namespace DataAccess.Repository
 {
-    public class AdminRepository : Repository<Admin>, IAdminRepository
+    public class GameEventRepository : Repository<GameEvent>, IGameEventRepository
     {
         private readonly ApplicationDbContext dbContext;
 
-        public AdminRepository(ApplicationDbContext dbContext) : base(dbContext)
+        public GameEventRepository(ApplicationDbContext dbContext) : base(dbContext)
         {
             this.dbContext = dbContext;
         }

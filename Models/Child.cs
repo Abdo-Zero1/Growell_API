@@ -22,11 +22,16 @@ namespace Models
         public int DevelopmentStatusID { get; set; }
         public string Note { get; set; }
 
-        // العلاقات
+        // علاقة مع الطبيب المعالج
+        public int DoctorID { get; set; } // المفتاح الخارجي للطبيب
+        public Doctor Doctor { get; set; } // العلاقة مع الطبيب
+
+        // العلاقات الأخرى
         public Parent Parent { get; set; }
         public DevelopmentStatus DevelopmentStatus { get; set; }
         public ICollection<Session> Sessions { get; set; }
         public ICollection<TestResult> TestResults { get; set; }
+        public ICollection<BookEvent> BookEvents { get; set; }
 
     }
 }

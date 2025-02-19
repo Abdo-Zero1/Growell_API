@@ -10,7 +10,6 @@ namespace Models
     public class Question
     {
         public int QuestionID { get; set; }
-        public int TestID { get; set; }
         public string QuestionText { get; set; }
         public string AnswerOption1 { get; set; }
         public string AnswerOption2 { get; set; }
@@ -20,6 +19,7 @@ namespace Models
         public int OrderNumber { get; set; }
         public int CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
+        public int TestID { get; set; }
 
         // العلاقة مع جدول الاختبارات
         public Test Test { get; set; }

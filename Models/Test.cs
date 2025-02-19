@@ -16,10 +16,15 @@ namespace Models
         public bool IsActive { get; set; }
         public int AdminID { get; set; }
 
-        // العلاقات
+        // إضافة علاقة مع الطبيب الذي يشرف على الاختبار
+        public int DoctorID { get; set; } // المفتاح الخارجي للطبيب
+        public Doctor Doctor { get; set; } // العلاقة مع الطبيب
+
+        // العلاقات الأخرى
         public Category Category { get; set; }
-        public Admin Admin { get; set; }
         public ICollection<Question> Questions { get; set; }
         public ICollection<TestResult> TestResults { get; set; }
+        public ICollection<BookEvent> BookEvents { get; set; }
+
     }
 }

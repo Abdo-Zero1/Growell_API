@@ -28,11 +28,13 @@ namespace Growell_API.DTOs
         [DataType(DataType.Password, ErrorMessage = "Invalid Password Format")]
         [StringLength(50, MinimumLength = 8, ErrorMessage = "Password must be between 8 and 50 Characters")]
         public string Password { get; set; }
+
         [Required]
         [DataType(DataType.Password)]
         [Compare(nameof(Password))]
         public string ConfirmPassword { get; set; }
-        public IFormFile ProfilePicturePath { get; set; }
+
+        public IFormFile? ProfilePicturePath { get; set; }
 
     }
 }
