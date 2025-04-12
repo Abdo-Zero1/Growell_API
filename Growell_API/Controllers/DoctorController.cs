@@ -1,4 +1,6 @@
-﻿using DataAccess.Repository.IRepository;
+﻿using DataAccess.Repository;
+using DataAccess.Repository.IRepository;
+using Growell_API.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +10,7 @@ namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = $"{SD.AdminRole}")]
+    // [Authorize(Roles = $"{SD.AdminRole}")]
 
     public class DoctorController : ControllerBase
     {
@@ -18,10 +20,48 @@ namespace Growell_API.Controllers
         {
             this.doctorRepository = doctorRepository;
         }
+
+
         [HttpGet]
-        public IActionResult Index() {
+        public ActionResult<IEnumerable<SimpleDoctorDTO>> Index() {
             var Doc = doctorRepository.Get().ToList();
-            return Ok(Doc);
+            var Doctors = new List<SimpleDoctorDTO>();
+            foreach (var doc in Doc)
+            {
+                SimpleDoctorDTO simpleDoctor = new SimpleDoctorDTO
+                {
+                    DoctorID = doc.DoctorID,
+                    Name = doc.FirstName + " " + doc.LastName,
+                    Description = doc.Description,
+                    AveRating = doc.AveRating,
+                    ImgUrl=doc.ImgUrl,
+
+                };
+                Doctors.Add(simpleDoctor);
+            }
+            return Ok(Doctors);
+            // return Ok();
         }
+
+        [HttpGet("Id/{DoctorID}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public ActionResult<DoctorDTO> GetCategory(int DoctorID)
+        {
+            var Doctor = doctorRepository.GetOne(expression: e => e.DoctorID == DoctorID);
+            if (Doctor == null)
+                return NotFound(new { message = "Category not found." });
+
+            DoctorDTO Doc = new DoctorDTO(Doctor); 
+            return Ok(Doc);
+
+             
+        }
+
+   
+
+
+
+
     }
 }
