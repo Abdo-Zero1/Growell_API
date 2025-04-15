@@ -50,7 +50,6 @@ namespace Growell_API.Controllers
         {
             var Doctor = doctorRepository.GetOne(expression: e => e.DoctorID == DoctorID);
             if (Doctor == null)
-                return NotFound(new { message = "Category not found." });
 
             DoctorDTO Doc = new DoctorDTO(Doctor); 
             return Ok(Doc);
