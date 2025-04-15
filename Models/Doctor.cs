@@ -8,6 +8,10 @@
         public string LastName { get; set; }
         public string Email { get; set; }
         public string Gender { get; set; }
+        public string Bio { get; set; } = null;
+
+        public string AboutMe { get; set; } = null;
+       
         public string Description { get; set; } 
         public int AveRating { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -24,6 +28,6 @@
         // علاقة مع الأطفال الذين يعالجهم الطبيب
         public ICollection<Child> Children { get; set; } // الأطفال الذين يعالجهم الطبيب
 
-
+        public ICollection<AppointmentDoc> Appointments { get; set; }
     }
 }

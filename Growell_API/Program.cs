@@ -2,6 +2,7 @@
 using DataAccess;
 using DataAccess.Repository;
 using DataAccess.Repository.IRepository;
+using Growell_API.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Models;
@@ -46,6 +47,7 @@ namespace Growell_API
             builder.Services.AddScoped<IDevelopmentStatusRepository, DevelopmentStatusRepository>();
             builder.Services.AddScoped<IChildRepository, ChildRepository>();
 
+            builder.Services.AddScoped<DoctorService>();
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.

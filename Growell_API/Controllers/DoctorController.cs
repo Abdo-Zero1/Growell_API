@@ -1,9 +1,13 @@
-﻿using DataAccess.Repository;
+﻿using DataAccess.DTOS;
+
+using DataAccess.Repository;
 using DataAccess.Repository.IRepository;
 using Growell_API.DTOs;
+using Growell_API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Reflection.Metadata;
 using Utility;
 
 namespace Growell_API.Controllers
@@ -15,46 +19,50 @@ namespace Growell_API.Controllers
     public class DoctorController : ControllerBase
     {
         private readonly IDoctorRepository doctorRepository;
-
-        public DoctorController(IDoctorRepository doctorRepository)
+        private readonly DoctorService _doctorService;
+        
+        public DoctorController(IDoctorRepository doctorRepository, DoctorService doctorService)
         {
             this.doctorRepository = doctorRepository;
+            this._doctorService = doctorService;
+          
+
         }
 
 
-        [HttpGet]
-        public ActionResult<IEnumerable<SimpleDoctorDTO>> Index() {
-            var Doc = doctorRepository.Get().ToList();
-            var Doctors = new List<SimpleDoctorDTO>();
-            foreach (var doc in Doc)
+        [HttpGet("all")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<IEnumerable<SimpleDoctorsDTO>>> GetAllDoctors(int PageNumber=1,int PageSize=10) {
+
+            if (PageNumber < 1 || PageSize < 1)
+                return BadRequest("Page Number and Page size Must be greater than 0");
+
+            var result = await doctorRepository.GetPagedDoctorsAsync(PageNumber, PageSize);
+            if (result.Data.Count == 0)
             {
-                SimpleDoctorDTO simpleDoctor = new SimpleDoctorDTO
+                return NotFound(new
                 {
-                    DoctorID = doc.DoctorID,
-                    Name = doc.FirstName + " " + doc.LastName,
-                    Description = doc.Description,
-                    AveRating = doc.AveRating,
-                    ImgUrl=doc.ImgUrl,
-
-                };
-                Doctors.Add(simpleDoctor);
+                    Message = "No Doctors found for the requested Page",
+                    PageNumber=PageNumber,
+                    PageSize=PageSize
+                });
             }
-            return Ok(Doctors);
-            // return Ok();
+            
+            return Ok(result);
+           
         }
+
 
         [HttpGet("Id/{DoctorID}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<DoctorDTO> GetCategory(int DoctorID)
+        public async Task<ActionResult<DoctorDTO>> GetCategory(int DoctorID)
         {
-            var Doctor = doctorRepository.GetOne(expression: e => e.DoctorID == DoctorID);
-            if (Doctor == null)
-                return NotFound(new { message = "Category not found." });
+           var Doctor= await _doctorService.GetDoctorWithAppointment(DoctorID);
+            if (Doctor == null) return NotFound($"The doctor with id {DoctorID} not found");
 
-            DoctorDTO Doc = new DoctorDTO(Doctor); 
-            return Ok(Doc);
-
+            return Ok(Doctor);
              
         }
 
