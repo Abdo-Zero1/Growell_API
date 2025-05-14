@@ -1,4 +1,6 @@
 ﻿using DataAccess.Repository.IRepository;
+using DataAccess;
+using DataAccess.Repository;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -114,7 +116,7 @@ namespace Growell_API
             builder.Services.AddScoped<ITestResultRepository, TestResultRepository>();
             builder.Services.AddScoped<IDevelopmentStatusRepository, DevelopmentStatusRepository>();
 
-            builder.Services.AddScoped<DoctorService>();
+            //builder.Services.AddScoped<DoctorService>();
             var app = builder.Build();
             if (app.Environment.IsDevelopment())
             {

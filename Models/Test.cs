@@ -24,7 +24,6 @@ namespace Models
 
         public ICollection<Question> Questions { get; set; }
         public ICollection<TestResult> TestResults { get; set; }
-        //public ICollection<BookEvent> BookEvents { get; set; }
 
     }
 }

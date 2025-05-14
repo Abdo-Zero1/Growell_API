@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Models;
 namespace DataAccess
 {
@@ -12,10 +13,8 @@ namespace DataAccess
         }
        // public DbSet<Admin> Admins { get; set; }
         public DbSet<Category> Categories { get; set; }
-        //public DbSet<Child> Children { get; set; }
         public DbSet<DevelopmentStatus> DevelopmentStatuses { get; set; }
         public DbSet<Doctor> Doctors { get; set; }
-        //public DbSet<Parent> Parents { get; set; }
         public DbSet<Question> Questions { get; set; }
         public DbSet<Session> Sessions { get; set; }
         public DbSet<Test> Tests { get; set; }
@@ -29,19 +28,25 @@ namespace DataAccess
         {
             base.OnModelCreating(modelBuilder);
 
-            // تحديد السلوك الخاص بالحذف بين الجداول
             modelBuilder.Entity<Test>()
                 .HasOne(t => t.Doctor)
                 .WithMany(d => d.Tests)
                 .HasForeignKey(t => t.DoctorID)
-                .OnDelete(DeleteBehavior.Restrict);  // استخدام Restrict أو SetNull
+                .OnDelete(DeleteBehavior.Restrict);  
 
             modelBuilder.Entity<Doctor>()
                 .HasMany(d => d.Tests)
                 .WithOne(t => t.Doctor)
                 .HasForeignKey(t => t.DoctorID)
-                .OnDelete(DeleteBehavior.Restrict);  // لا يسمح بالحذف التلقائي
-            
+                .OnDelete(DeleteBehavior.Restrict);  
+
+
+            modelBuilder.Entity<Test>()
+                .HasMany(t => t.TestResults)
+                .WithOne(tr => tr.Test)
+                .HasForeignKey(tr => tr.TestID)
+                .OnDelete(DeleteBehavior.Cascade);
+
 
 
 

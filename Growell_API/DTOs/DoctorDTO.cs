@@ -21,7 +21,7 @@ namespace Growell_API.DTOs
         public int     Age  { get; set; }
         public string  ImgUrl { get; set; }
         
-        public ICollection<AppointmentDTO> appointmentDTOs { get; set; }
+        //public ICollection<AppointmentDTO> appointmentDTOs { get; set; }
   
 
     }

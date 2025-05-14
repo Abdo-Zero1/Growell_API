@@ -22,9 +22,8 @@
         public int Age { get; set; }
         public string ImgUrl { get; set; }
 
-        public ICollection<Test> Tests { get; set; } 
+        public ICollection<Test> Tests { get; set; }
 
 
-        public ICollection<AppointmentDoc> Appointments { get; set; }
     }
 }

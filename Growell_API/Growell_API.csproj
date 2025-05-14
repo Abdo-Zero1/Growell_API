@@ -30,6 +30,7 @@
 	  <Folder Include="images\Game\" />
 	  <Folder Include="images\file\" />
 	  <Folder Include="images\Video\" />
+	  <Folder Include="Services\" />
 	</ItemGroup>
 
 

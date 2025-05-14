@@ -15,6 +15,5 @@ namespace Models
         public DateTime TakenAt { get; set; }
 
         public Test Test { get; set; }
-        //public Child Child { get; set; }
     }
 }
