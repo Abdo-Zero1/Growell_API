@@ -4,6 +4,7 @@ using DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DataAccess.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250511122145_editAllCompltedatabase")]
+    partial class editAllCompltedatabase
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -252,14 +255,14 @@ namespace DataAccess.Migrations
                     b.Property<DateTime>("EventDateTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("TestResultID")
+                    b.Property<int>("TestId")
                         .HasColumnType("int");
 
                     b.HasKey("BookEventId");
 
                     b.HasIndex("DevelopmentStatusID");
 
-                    b.HasIndex("TestResultID");
+                    b.HasIndex("TestId");
 
                     b.ToTable("bookEvents");
                 });
@@ -362,6 +365,51 @@ namespace DataAccess.Migrations
                     b.HasKey("DoctorID");
 
                     b.ToTable("Doctors");
+                });
+
+            modelBuilder.Entity("Models.GameEvent", b =>
+                {
+                    b.Property<int>("GameEventId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("GameEventId"));
+
+                    b.Property<int>("ChildId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DevelopmentStatusID")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("EventDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GameFilePath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("GameImagePath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("GameName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Level")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("Score")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TestId")
+                        .HasColumnType("int");
+
+                    b.HasKey("GameEventId");
+
+                    b.HasIndex("DevelopmentStatusID");
+
+                    b.HasIndex("TestId");
+
+                    b.ToTable("gameEvents");
                 });
 
             modelBuilder.Entity("Models.Question", b =>
@@ -507,13 +555,16 @@ namespace DataAccess.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("VideoEventId"));
 
+                    b.Property<int>("ChildId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("DevelopmentStatusID")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("EventDateTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("TestResultID")
+                    b.Property<int>("TestId")
                         .HasColumnType("int");
 
                     b.Property<string>("Topic")
@@ -530,7 +581,7 @@ namespace DataAccess.Migrations
 
                     b.HasIndex("DevelopmentStatusID");
 
-                    b.HasIndex("TestResultID");
+                    b.HasIndex("TestId");
 
                     b.ToTable("videoEvents");
                 });
@@ -592,15 +643,32 @@ namespace DataAccess.Migrations
                         .WithMany("BookEvents")
                         .HasForeignKey("DevelopmentStatusID");
 
-                    b.HasOne("Models.TestResult", "TestResult")
-                        .WithMany()
-                        .HasForeignKey("TestResultID")
+                    b.HasOne("Models.Test", "Test")
+                        .WithMany("BookEvents")
+                        .HasForeignKey("TestId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("DevelopmentStatus");
 
-                    b.Navigation("TestResult");
+                    b.Navigation("Test");
+                });
+
+            modelBuilder.Entity("Models.GameEvent", b =>
+                {
+                    b.HasOne("Models.DevelopmentStatus", "DevelopmentStatus")
+                        .WithMany()
+                        .HasForeignKey("DevelopmentStatusID");
+
+                    b.HasOne("Models.Test", "Test")
+                        .WithMany()
+                        .HasForeignKey("TestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DevelopmentStatus");
+
+                    b.Navigation("Test");
                 });
 
             modelBuilder.Entity("Models.Question", b =>
@@ -650,15 +718,15 @@ namespace DataAccess.Migrations
                         .WithMany()
                         .HasForeignKey("DevelopmentStatusID");
 
-                    b.HasOne("Models.TestResult", "TestResult")
+                    b.HasOne("Models.Test", "Test")
                         .WithMany()
-                        .HasForeignKey("TestResultID")
+                        .HasForeignKey("TestId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("DevelopmentStatus");
 
-                    b.Navigation("TestResult");
+                    b.Navigation("Test");
                 });
 
             modelBuilder.Entity("Models.Category", b =>
@@ -678,6 +746,8 @@ namespace DataAccess.Migrations
 
             modelBuilder.Entity("Models.Test", b =>
                 {
+                    b.Navigation("BookEvents");
+
                     b.Navigation("Questions");
 
                     b.Navigation("TestResults");

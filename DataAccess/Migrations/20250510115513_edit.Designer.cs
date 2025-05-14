@@ -4,6 +4,7 @@ using DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DataAccess.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250510115513_edit")]
+    partial class edit
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -246,20 +249,25 @@ namespace DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("ChildId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("DevelopmentStatusID")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("EventDateTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("TestResultID")
+                    b.Property<int>("TestId")
                         .HasColumnType("int");
 
                     b.HasKey("BookEventId");
 
+                    b.HasIndex("ChildId");
+
                     b.HasIndex("DevelopmentStatusID");
 
-                    b.HasIndex("TestResultID");
+                    b.HasIndex("TestId");
 
                     b.ToTable("bookEvents");
                 });
@@ -272,10 +280,6 @@ namespace DataAccess.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CategoryID"));
 
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -283,6 +287,67 @@ namespace DataAccess.Migrations
                     b.HasKey("CategoryID");
 
                     b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("Models.Child", b =>
+                {
+                    b.Property<int>("ChildID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ChildID"));
+
+                    b.Property<int>("Age")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DOB")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DevelopmentStatusID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DoctorID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Gender")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IQScore")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ImgUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastTestDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Note")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ParentID")
+                        .HasColumnType("int");
+
+                    b.HasKey("ChildID");
+
+                    b.HasIndex("DevelopmentStatusID");
+
+                    b.HasIndex("DoctorID");
+
+                    b.HasIndex("ParentID");
+
+                    b.ToTable("Children");
                 });
 
             modelBuilder.Entity("Models.DevelopmentStatus", b =>
@@ -364,6 +429,97 @@ namespace DataAccess.Migrations
                     b.ToTable("Doctors");
                 });
 
+            modelBuilder.Entity("Models.GameEvent", b =>
+                {
+                    b.Property<int>("GameEventId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("GameEventId"));
+
+                    b.Property<int>("ChildId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DevelopmentStatusID")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("EventDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GameFilePath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("GameImagePath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("GameName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Level")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("Score")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TestId")
+                        .HasColumnType("int");
+
+                    b.HasKey("GameEventId");
+
+                    b.HasIndex("ChildId");
+
+                    b.HasIndex("DevelopmentStatusID");
+
+                    b.HasIndex("TestId");
+
+                    b.ToTable("gameEvents");
+                });
+
+            modelBuilder.Entity("Models.Parent", b =>
+                {
+                    b.Property<int>("ParentID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ParentID"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Gender")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Occupation")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SecondName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ParentID");
+
+                    b.ToTable("Parents");
+                });
+
             modelBuilder.Entity("Models.Question", b =>
                 {
                     b.Property<int>("QuestionID")
@@ -423,6 +579,12 @@ namespace DataAccess.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SessionId"));
 
+                    b.Property<int>("Child")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ChildID")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CompletedAt")
                         .HasColumnType("datetime2");
 
@@ -431,6 +593,8 @@ namespace DataAccess.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("SessionId");
+
+                    b.HasIndex("ChildID");
 
                     b.ToTable("Sessions");
                 });
@@ -442,6 +606,9 @@ namespace DataAccess.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TestID"));
+
+                    b.Property<int>("AdminID")
+                        .HasColumnType("int");
 
                     b.Property<int>("CategoryID")
                         .HasColumnType("int");
@@ -494,6 +661,8 @@ namespace DataAccess.Migrations
 
                     b.HasKey("TestResultID");
 
+                    b.HasIndex("ChildID");
+
                     b.HasIndex("TestID");
 
                     b.ToTable("TestResults");
@@ -507,13 +676,16 @@ namespace DataAccess.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("VideoEventId"));
 
+                    b.Property<int>("ChildId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("DevelopmentStatusID")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("EventDateTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("TestResultID")
+                    b.Property<int>("TestId")
                         .HasColumnType("int");
 
                     b.Property<string>("Topic")
@@ -528,9 +700,11 @@ namespace DataAccess.Migrations
 
                     b.HasKey("VideoEventId");
 
+                    b.HasIndex("ChildId");
+
                     b.HasIndex("DevelopmentStatusID");
 
-                    b.HasIndex("TestResultID");
+                    b.HasIndex("TestId");
 
                     b.ToTable("videoEvents");
                 });
@@ -588,19 +762,79 @@ namespace DataAccess.Migrations
 
             modelBuilder.Entity("Models.BookEvent", b =>
                 {
+                    b.HasOne("Models.Child", "Child")
+                        .WithMany("BookEvents")
+                        .HasForeignKey("ChildId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("Models.DevelopmentStatus", "DevelopmentStatus")
                         .WithMany("BookEvents")
                         .HasForeignKey("DevelopmentStatusID");
 
-                    b.HasOne("Models.TestResult", "TestResult")
-                        .WithMany()
-                        .HasForeignKey("TestResultID")
+                    b.HasOne("Models.Test", "Test")
+                        .WithMany("BookEvents")
+                        .HasForeignKey("TestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Child");
+
+                    b.Navigation("DevelopmentStatus");
+
+                    b.Navigation("Test");
+                });
+
+            modelBuilder.Entity("Models.Child", b =>
+                {
+                    b.HasOne("Models.DevelopmentStatus", "DevelopmentStatus")
+                        .WithMany("Children")
+                        .HasForeignKey("DevelopmentStatusID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Models.Doctor", "Doctor")
+                        .WithMany("Children")
+                        .HasForeignKey("DoctorID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Models.Parent", "Parent")
+                        .WithMany("Children")
+                        .HasForeignKey("ParentID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("DevelopmentStatus");
 
-                    b.Navigation("TestResult");
+                    b.Navigation("Doctor");
+
+                    b.Navigation("Parent");
+                });
+
+            modelBuilder.Entity("Models.GameEvent", b =>
+                {
+                    b.HasOne("Models.Child", "Child")
+                        .WithMany()
+                        .HasForeignKey("ChildId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Models.DevelopmentStatus", "DevelopmentStatus")
+                        .WithMany()
+                        .HasForeignKey("DevelopmentStatusID");
+
+                    b.HasOne("Models.Test", "Test")
+                        .WithMany()
+                        .HasForeignKey("TestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Child");
+
+                    b.Navigation("DevelopmentStatus");
+
+                    b.Navigation("Test");
                 });
 
             modelBuilder.Entity("Models.Question", b =>
@@ -612,6 +846,13 @@ namespace DataAccess.Migrations
                         .IsRequired();
 
                     b.Navigation("Test");
+                });
+
+            modelBuilder.Entity("Models.Session", b =>
+                {
+                    b.HasOne("Models.Child", null)
+                        .WithMany("Sessions")
+                        .HasForeignKey("ChildID");
                 });
 
             modelBuilder.Entity("Models.Test", b =>
@@ -635,30 +876,46 @@ namespace DataAccess.Migrations
 
             modelBuilder.Entity("Models.TestResult", b =>
                 {
+                    b.HasOne("Models.Child", "Child")
+                        .WithMany("TestResults")
+                        .HasForeignKey("ChildID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("Models.Test", "Test")
                         .WithMany("TestResults")
                         .HasForeignKey("TestID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Child");
+
                     b.Navigation("Test");
                 });
 
             modelBuilder.Entity("Models.VideoEvent", b =>
                 {
+                    b.HasOne("Models.Child", "Child")
+                        .WithMany()
+                        .HasForeignKey("ChildId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("Models.DevelopmentStatus", "DevelopmentStatus")
                         .WithMany()
                         .HasForeignKey("DevelopmentStatusID");
 
-                    b.HasOne("Models.TestResult", "TestResult")
+                    b.HasOne("Models.Test", "Test")
                         .WithMany()
-                        .HasForeignKey("TestResultID")
+                        .HasForeignKey("TestId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Child");
+
                     b.Navigation("DevelopmentStatus");
 
-                    b.Navigation("TestResult");
+                    b.Navigation("Test");
                 });
 
             modelBuilder.Entity("Models.Category", b =>
@@ -666,18 +923,38 @@ namespace DataAccess.Migrations
                     b.Navigation("Tests");
                 });
 
+            modelBuilder.Entity("Models.Child", b =>
+                {
+                    b.Navigation("BookEvents");
+
+                    b.Navigation("Sessions");
+
+                    b.Navigation("TestResults");
+                });
+
             modelBuilder.Entity("Models.DevelopmentStatus", b =>
                 {
                     b.Navigation("BookEvents");
+
+                    b.Navigation("Children");
                 });
 
             modelBuilder.Entity("Models.Doctor", b =>
                 {
+                    b.Navigation("Children");
+
                     b.Navigation("Tests");
+                });
+
+            modelBuilder.Entity("Models.Parent", b =>
+                {
+                    b.Navigation("Children");
                 });
 
             modelBuilder.Entity("Models.Test", b =>
                 {
+                    b.Navigation("BookEvents");
+
                     b.Navigation("Questions");
 
                     b.Navigation("TestResults");

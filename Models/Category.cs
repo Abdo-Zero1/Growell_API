@@ -12,6 +12,7 @@ namespace Models
 
         public int CategoryID { get; set; }
         public string Name { get; set; }
+        public string Description { get; set; }
 
         // العلاقة مع جدول الاختبارات
         public ICollection<Test> Tests { get; set; }

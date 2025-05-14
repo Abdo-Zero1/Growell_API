@@ -11,7 +11,7 @@ namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = $"{SD.AdminRole},{SD.DoctorRole}")]
+   // [Authorize(Roles = $"{SD.AdminRole},{SD.DoctorRole}")]
     public class VideoEventController : ControllerBase
     {
         private readonly IVideoEventRepository videoEventRepository;
@@ -77,8 +77,7 @@ namespace Growell_API.Controllers
                 return NotFound("Video Event not found.");
             }
 
-            videoEvent.ChildId = videoDTO.VideoEvent.ChildId;
-            videoEvent.TestId = videoDTO.VideoEvent.TestId;
+            videoEvent.TestResult = videoDTO.VideoEvent.TestResult;
             videoEvent.EventDateTime = videoDTO.VideoEvent.EventDateTime;
             videoEvent.VideoTitle = videoDTO.VideoEvent.VideoTitle;
             videoEvent.Topic = videoDTO.VideoEvent.Topic;

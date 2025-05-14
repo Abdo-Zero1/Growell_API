@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Models
@@ -14,17 +15,16 @@ namespace Models
         public int CategoryID { get; set; }
         public int NumberOfQuestions { get; set; }
         public bool IsActive { get; set; }
-        public int AdminID { get; set; }
 
-        // إضافة علاقة مع الطبيب الذي يشرف على الاختبار
-        public int DoctorID { get; set; } // المفتاح الخارجي للطبيب
-        public Doctor Doctor { get; set; } // العلاقة مع الطبيب
-
-        // العلاقات الأخرى
+        public int DoctorID { get; set; }
+        [JsonIgnore]
+        public Doctor Doctor { get; set; }
+        [JsonIgnore]
         public Category Category { get; set; }
+
         public ICollection<Question> Questions { get; set; }
         public ICollection<TestResult> TestResults { get; set; }
-        public ICollection<BookEvent> BookEvents { get; set; }
+        //public ICollection<BookEvent> BookEvents { get; set; }
 
     }
 }

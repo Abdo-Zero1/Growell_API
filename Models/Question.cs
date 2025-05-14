@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -20,8 +21,7 @@ namespace Models
         public int CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
         public int TestID { get; set; }
-
-        // العلاقة مع جدول الاختبارات
+        [JsonIgnore]
         public Test Test { get; set; }
     }
 }

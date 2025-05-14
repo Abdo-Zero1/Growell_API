@@ -6,110 +6,151 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Models;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
+using System.Text;
 using Utility;
 
 namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-
     public class AccountController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> userManager;
         private readonly SignInManager<ApplicationUser> signInManager;
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly IMapper mapper;
+        private readonly IConfiguration configuration;
 
         public AccountController(UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            RoleManager<IdentityRole> roleManager, IMapper mapper)
+            RoleManager<IdentityRole> roleManager, IMapper mapper, IConfiguration configuration)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
             this.roleManager = roleManager;
             this.mapper = mapper;
+            this.configuration = configuration;
         }
+
         [HttpPost("Register")]
-        public async Task<IActionResult> Register(ApplicationUserDTO userDTO)
+        public async Task<IActionResult> Register([FromForm] ApplicationUserDTO userDTO)
         {
-            if (roleManager.Roles.IsNullOrEmpty())
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (!roleManager.Roles.Any())
             {
-                await roleManager.CreateAsync(new(SD.AdminRole));
-                await roleManager.CreateAsync(new(SD.DoctorRole));
-                await roleManager.CreateAsync(new(SD.UserRole));
+                await roleManager.CreateAsync(new IdentityRole(SD.AdminRole));
+                await roleManager.CreateAsync(new IdentityRole(SD.DoctorRole));
+                await roleManager.CreateAsync(new IdentityRole(SD.UserRole));
             }
-            if (ModelState.IsValid)
+
+            var user = mapper.Map<ApplicationUser>(userDTO);
+
+            if (userDTO.ProfilePicturePath == null)
             {
+                user.ProfilePicturePath = "/images/images.jpg"; 
+            }
+            else
+            {
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+                var extension = Path.GetExtension(userDTO.ProfilePicturePath.FileName).ToLower();
 
-                //ApplicationUser user = new()
-                //{
-                //    UserName = $"{userDTO.FristName}_{userDTO.LastName}",
-                //    Email = userDTO.Email,
+                if (!allowedExtensions.Contains(extension))
+                    return BadRequest("Invalid file type. Only .jpg, .jpeg, .png, and .gif are allowed.");
 
-                //};
+                if (userDTO.ProfilePicturePath.Length > 2 * 1024 * 1024)
+                    return BadRequest("File size exceeds 2MB.");
 
-                var user = mapper.Map<ApplicationUser>(userDTO);
+                var fileName = $"{Guid.NewGuid()}{extension}";
+                var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "images");
+                Directory.CreateDirectory(folderPath);
+                var filePath = Path.Combine(folderPath, fileName);
 
-                user.ProfilePicturePath = "/images/images.jpg";
-
-                var result = await userManager.CreateAsync(user, userDTO.Password);
-
-                if (result.Succeeded)
+                using (var stream = new FileStream(filePath, FileMode.Create))
                 {
-                    await userManager.AddToRoleAsync(user, SD.UserRole);
-                    await signInManager.SignInAsync(user, false);
-                    return Ok(new { message = "The user has been successfully registered!" });
+                    await userDTO.ProfilePicturePath.CopyToAsync(stream);
                 }
-                return BadRequest(result.Errors);
+
+                user.ProfilePicturePath = $"/images/{fileName}";
             }
-            return BadRequest(userDTO);
+
+            var result = await userManager.CreateAsync(user, userDTO.Password);
+            if (!result.Succeeded)
+                return BadRequest(result.Errors);
+
+            await userManager.AddToRoleAsync(user, SD.UserRole);
+
+            var token = await GenerateJwtToken(user);
+            return Ok(new
+            {
+                Token = token,
+                Message = "The user has been successfully registered!"
+            });
         }
 
 
         [HttpPost("Login")]
-        public async Task<IActionResult> Login(LoginDTO loginDTo)
+        public async Task<IActionResult> Login([FromBody] LoginDTO loginDto)
         {
-            var user = await userManager.FindByEmailAsync(loginDTo.EmailAddress);
-            if (user != null)
-            {
-                var result = await userManager.CheckPasswordAsync(user, loginDTo.Password);
-                if (result)
-                {
-                    await signInManager.SignInAsync(user, loginDTo.RememberMe);
-                    return Ok(new { Message = "the user has been successfully login." });
-                }
-                else
-                {
-                    ModelState.AddModelError(string.Empty, "There are errors");
-                }
-            }
-            else
-            {
-                ModelState.AddModelError("UserName", "Indalid UserName");
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            }
-            return NotFound();
+            var user = await userManager.FindByEmailAsync(loginDto.EmailAddress);
+            if (user == null)
+                return NotFound(new { Message = "Invalid email or password." });
+
+            var result = await userManager.CheckPasswordAsync(user, loginDto.Password);
+            if (!result)
+                return BadRequest(new { Message = "Invalid email or password." });
+
+            var token = await GenerateJwtToken(user);
+            return Ok(new
+            {
+                Token = token,
+                Message = "The user has been successfully logged in!"
+            });
         }
 
+        private async Task<string> GenerateJwtToken(ApplicationUser user)
+        {
+            var userRoles = await userManager.GetRolesAsync(user);
+
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim(ClaimTypes.Name, user.UserName),
+                new Claim(ClaimTypes.NameIdentifier, user.Id)
+            };
+
+            foreach (var role in userRoles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JwtSettings:SecretKey"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: configuration["JwtSettings:Issuer"],
+                audience: configuration["JwtSettings:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(configuration["JwtSettings:ExpiryInMinutes"])),
+                signingCredentials: creds);
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
 
         [HttpPost("Logout")]
         public async Task<IActionResult> Logout()
         {
             await signInManager.SignOutAsync();
-
-            //var userId = User.FindFirst("sub")?.Value;
-
-            //if (userId == null)
-            {
-                return Ok(new { Message = "user logged out successfully" });
-            }
-            //else
-            //{
-            //    return Ok(new { Message = "User logged out successfully" });
-            //}
+            return Ok(new { Message = "User logged out successfully" });
         }
-
 
         [HttpPost("ChangePassword")]
         public async Task<IActionResult> ChangePassword(ChangePasswordDTO changePasswordDTO)
@@ -156,7 +197,6 @@ namespace Growell_API.Controllers
 
             return Ok(userProfile);
         }
-
 
         [HttpPost("Profile/Update")]
         public async Task<IActionResult> UpdateProfile([FromForm] ApplicationUserDTO profileDTO)
@@ -246,8 +286,3 @@ namespace Growell_API.Controllers
         }
     }
 }
-
-    
-
-
-

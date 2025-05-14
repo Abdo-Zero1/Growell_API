@@ -2,7 +2,7 @@
 {
     public class Doctor
     {
-        public int DoctorID { get; set; } // المفتاح الأساسي
+        public int DoctorID { get; set; } 
         public string FirstName { get; set; }
         public string SecondName { get; set; } = null;
         public string LastName { get; set; }
@@ -10,17 +10,14 @@
         public string Gender { get; set; }
         public DateTime CreatedAt { get; set; }
         public string PhoneNumber { get; set; }
-        public string Specialization { get; set; } // التخصص
-        public int YearsOfExperience { get; set; } // عدد سنوات الخبرة
-        public string Education { get; set; } // المؤهلات التعليمية
+        public string Specialization { get; set; } 
+        public int YearsOfExperience { get; set; } 
+        public string Education { get; set; } 
         public int Age { get; set; }
         public string ImgUrl { get; set; }
 
-        // علاقة مع الاختبارات التي يشرف عليها الطبيب
-        public ICollection<Test> Tests { get; set; } // الاختبارات التي يشرف عليها الطبيب
+        public ICollection<Test> Tests { get; set; } 
 
-        // علاقة مع الأطفال الذين يعالجهم الطبيب
-        public ICollection<Child> Children { get; set; } // الأطفال الذين يعالجهم الطبيب
 
 
     }

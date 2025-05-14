@@ -4,7 +4,7 @@ namespace Growell_API.DTOs
 {
     public class ApplicationUserDTO
     {
-        public int Id { get; set; }
+     //   public int Id { get; set; }
 
         [Required(ErrorMessage = "First Name is Required")]
         [MinLength(3, ErrorMessage = "First Name must be at least 3 characters long")]
@@ -35,6 +35,7 @@ namespace Growell_API.DTOs
         public string ConfirmPassword { get; set; }
 
         public IFormFile? ProfilePicturePath { get; set; }
+       // public string ProfilePicture { get; set; }
 
     }
 }

@@ -11,7 +11,7 @@ namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = $"{SD.AdminRole},{SD.DoctorRole}")]
+    //[Authorize(Roles = $"{SD.AdminRole},{SD.DoctorRole}")]
 
     public class BookEventController : ControllerBase
     {
@@ -76,8 +76,7 @@ namespace Growell_API.Controllers
                 return NotFound("BookEvent not found");
             }
             existingBook.BookTitle = bookDTO.BookEvent.BookTitle;
-            existingBook.TestId = bookDTO.BookEvent.TestId;
-            existingBook.ChildId = bookDTO.BookEvent.ChildId;
+            existingBook.TestResult = bookDTO.BookEvent.TestResult;
             existingBook.DevelopmentStatusID = bookDTO.BookEvent.DevelopmentStatusID;
 
             if (bookDTO.ImgUrl != null && bookDTO.ImgUrl.Length > 0)

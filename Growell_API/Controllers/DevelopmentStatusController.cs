@@ -9,16 +9,14 @@ namespace Growell_API.Controllers
     public class DevelopmentStatusController : ControllerBase
     {
         private readonly IDevelopmentStatusRepository developmentStatusRepository;
-        private readonly IChildRepository childRepository;
 
-        public DevelopmentStatusController(IDevelopmentStatusRepository developmentStatusRepository, IChildRepository childRepository)
+        public DevelopmentStatusController(IDevelopmentStatusRepository developmentStatusRepository)
         {
             this.developmentStatusRepository = developmentStatusRepository;
-            this.childRepository = childRepository;
         }
         [HttpGet]
         public IActionResult Index() {
-            var development = developmentStatusRepository.Get(Include: [c=>c.Children]).ToList();
+            var development = developmentStatusRepository.Get().ToList();
             return Ok(development);
         }
 

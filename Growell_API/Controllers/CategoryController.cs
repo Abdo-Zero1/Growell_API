@@ -10,7 +10,7 @@ namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = $"{SD.AdminRole}")]
+   // [Authorize(Roles = $"{SD.DoctorRole}")]
 
     public class CategoryController : ControllerBase
     {
@@ -29,6 +29,7 @@ namespace Growell_API.Controllers
             var Category = categoryRepository.Get(Include: [t=>t.Tests]).ToList();
             return Ok(Category);
         }
+        
 
         [HttpPost]
         [Route("Create")]
@@ -50,9 +51,9 @@ namespace Growell_API.Controllers
         {
             var category = categoryRepository.GetOne( expression: e => e.CategoryID == CategoryId);
             if (category != null)
-                return Ok(category); // Returns HTTP 200 with the category data.
+                return Ok(category); 
 
-            return NotFound(new { message = "Category not found." }); // Returns HTTP 404 with an error message.
+            return NotFound(new { message = "Category not found." }); 
         }
 
         [HttpPut]
@@ -65,7 +66,6 @@ namespace Growell_API.Controllers
                 if (existingCategory == null)
                     return NotFound(new { message = "Category not found." });
 
-                // Update category in the repository
                 categoryRepository.Edit(category);
                 categoryRepository.Commit();
 

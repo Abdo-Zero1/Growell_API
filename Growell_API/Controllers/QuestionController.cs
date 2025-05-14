@@ -11,7 +11,7 @@ namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = $"{SD.AdminRole},{SD.DoctorRole}")]
+   // [Authorize(Roles = $"{SD.AdminRole},{SD.DoctorRole}")]
 
     public class QuestionController : ControllerBase
     {
@@ -53,19 +53,19 @@ namespace Growell_API.Controllers
 
             return BadRequest(new { message = "Invalid data.", errors = ModelState.Values.SelectMany(v => v.Errors) });
         }
-        [HttpGet("{id}")]
-        public IActionResult Get(int Id)
-        {
-            var question = questionRepository.GetOne(expression: g => g.QuestionID == Id);
-            if (question == null)
-            {
-                return NotFound("question not found");
-            }
-            return Ok(question);
+        //[HttpGet("{id}")]
+        //public IActionResult Get(int Id)
+        //{
+        //    var question = questionRepository.GetOne(expression: g => g.QuestionID == Id);
+        //    if (question == null)
+        //    {
+        //        return NotFound("question not found");
+        //    }
+        //    return Ok(question);
 
-        }
+        //}
 
-        [HttpPut("{id}")]
+        [HttpPut("Edit{id}")]
         public IActionResult Edit(int id, [FromBody] Question updatedQuestion)
         {
             if (ModelState.IsValid)

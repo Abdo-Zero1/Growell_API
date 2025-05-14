@@ -14,8 +14,7 @@ namespace Models
         public int Score { get; set; }
         public DateTime TakenAt { get; set; }
 
-        // العلاقة مع الجداول الأخرى
         public Test Test { get; set; }
-        public Child Child { get; set; }
+        //public Child Child { get; set; }
     }
 }

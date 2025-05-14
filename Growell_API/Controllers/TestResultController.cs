@@ -20,7 +20,7 @@ namespace Growell_API.Controllers
         }
         [HttpGet("Get")]
         public ActionResult Index() {
-            var testResult = testResultRepository.Get();
+            var testResult = testResultRepository.Get().ToList();
             return Ok(testResult);
         }
     }

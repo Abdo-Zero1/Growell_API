@@ -13,7 +13,7 @@ namespace Models
         public string Description { get; set; }
 
         // العلاقات
-        public ICollection<Child> Children { get; set; }
+        //public ICollection<Child> Children { get; set; }
         public ICollection<BookEvent> BookEvents { get; set; }
 
     }
