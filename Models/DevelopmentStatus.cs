@@ -14,6 +14,7 @@ namespace Models
 
       
         public ICollection<BookEvent> BookEvents { get; set; }
+       
 
     }
 }

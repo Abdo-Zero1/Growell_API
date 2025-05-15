@@ -10,7 +10,6 @@ namespace Models
     {
         public int TestResultID { get; set; }
         public int TestID { get; set; }
-        public int ChildID { get; set; }
         public int Score { get; set; }
         public DateTime TakenAt { get; set; }
 
