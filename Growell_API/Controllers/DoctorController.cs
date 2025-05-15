@@ -26,16 +26,59 @@ namespace Growell_API.Controllers
             this.testRepository = testRepository;
         }
         [HttpGet]
-       
-        public IActionResult Index()
+
+        public IActionResult Index(int page = 1, int pageSize = 10)
         {
-            var Doc = testRepository.Get(Include: new Expression<Func<Test, object>>[]
-                           {
-        t => t.Doctor,
-        t => t.TestResults
-                           }).ToList();
-            return Ok(Doc); 
+            var topDoctors = doctorRepository.Get()
+                .OrderByDescending(d => d.AveRating)
+                .Select(d => new
+                {
+                    Image = d.ImgUrl,
+                    FullName = $"{d.FirstName} {d.LastName}",
+                    Bio = d.Bio,
+                    Specialization = d.Specialization,
+                })
+                .Skip((page - 1) * pageSize) 
+                .Take(pageSize) 
+                .ToList();
+
+            return Ok(topDoctors);
         }
+        [HttpGet("{id}")]
+        public IActionResult Details(int id)
+        {
+            var doctor = doctorRepository.Get()
+                .Where(d => d.DoctorID == id)
+                .Select(d => new
+                {
+                    ImgUrl = d.ImgUrl,
+                    FullName = $"{d.FirstName} {d.LastName}",
+                    Email = d.Email,
+                    Gender = d.Gender,
+                    Bio = d.Bio,
+                    AboutMe = d.AboutMe,
+                    Description = d.Description,
+                    AveRating = d.AveRating,
+                    CreatedAt = d.CreatedAt,
+                    PhoneNumber = d.PhoneNumber,
+                    Specialization = d.Specialization,
+                    YearsOfExperience = d.YearsOfExperience,
+                    Education = d.Education,
+                    Age = d.Age,
+                    test= d.Tests,
+
+                })
+                .FirstOrDefault();
+
+            if (doctor == null)
+            {
+                return NotFound(new { Message = "Doctor not found" });
+            }
+
+            return Ok(doctor);
+        }
+
+
 
 
 
