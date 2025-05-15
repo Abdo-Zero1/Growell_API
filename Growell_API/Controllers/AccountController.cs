@@ -177,73 +177,34 @@ namespace Growell_API.Controllers
             return BadRequest(result.Errors);
         }
 
-        [HttpGet("Profile")]
-        public async Task<IActionResult> GetProfile()
-        {
-            var userId = User.FindFirst("sub")?.Value;
-            if (userId == null)
-                return Unauthorized("User not authorized.");
-
-            var user = await userManager.FindByIdAsync(userId);
-            if (user == null)
-                return NotFound("User not found.");
-
-            var userProfile = new ProfileDTO
-            {
-                UserName = user.UserName,
-                Email = user.Email,
-                ProfilePicturePath = user.ProfilePicturePath
-            };
-
-            return Ok(userProfile);
-        }
-
         [HttpPost("Profile/Update")]
-        public async Task<IActionResult> UpdateProfile([FromForm] ApplicationUserDTO profileDTO)
+        public async Task<IActionResult> UpdateProfile([FromForm] ProfileDTO profileDTO)
         {
-            var userId = User.FindFirst("sub")?.Value;
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (userId == null)
-                return Unauthorized("User not authorized.");
+                return Unauthorized(new { error = "Authorization error", message = "User ID is missing or invalid." });
 
             var user = await userManager.FindByIdAsync(userId);
             if (user == null)
-                return NotFound("User not found.");
+                return NotFound(new { error = "Not Found", message = "The requested user does not exist." });
 
-            user.UserName = profileDTO.FristName ?? profileDTO.LastName;
-
-            user.Email = profileDTO.Email ?? user.Email;
-
-            if (!string.IsNullOrEmpty(profileDTO.Password))
+            // تحديث الاسم إذا تم تقديمه
+            if (!string.IsNullOrEmpty(profileDTO.UserName))
             {
-                var token = await userManager.GeneratePasswordResetTokenAsync(user);
-                var resetResult = await userManager.ResetPasswordAsync(user, token, profileDTO.Password);
-                if (!resetResult.Succeeded)
-                {
-                    return BadRequest("Failed to update password.");
-                }
+                user.UserName = profileDTO.UserName;
             }
 
-            if (profileDTO.ProfilePicturePath != null && profileDTO.ProfilePicturePath.Length > 0)
+            // تحديث الصورة إذا تم تقديمها
+            if (profileDTO.ProfilePicture != null && profileDTO.ProfilePicture.Length > 0)
             {
-                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
-                var extension = Path.GetExtension(profileDTO.ProfilePicturePath.FileName).ToLower();
-                if (!allowedExtensions.Contains(extension))
-                    return BadRequest("Invalid file type. Only .jpg, .jpeg, .png, and .gif are allowed.");
-
-                if (profileDTO.ProfilePicturePath.Length > 2 * 1024 * 1024)
-                    return BadRequest("File size exceeds 2MB.");
-
-                var fileName = $"{Guid.NewGuid()}{extension}";
-                var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "images");
-                Directory.CreateDirectory(folderPath);
-                var filePath = Path.Combine(folderPath, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                try
                 {
-                    await profileDTO.ProfilePicturePath.CopyToAsync(stream);
+                    user.ProfilePicturePath = await SaveProfilePicture(profileDTO.ProfilePicture);
                 }
-
-                user.ProfilePicturePath = $"/images/{fileName}";
+                catch (Exception ex)
+                {
+                    return BadRequest(new { error = "Image Upload Error", message = ex.Message });
+                }
             }
 
             var result = await userManager.UpdateAsync(user);
@@ -256,14 +217,51 @@ namespace Growell_API.Controllers
                     userData = new
                     {
                         user.UserName,
-                        user.Email,
                         user.ProfilePicturePath
                     }
                 });
             }
+            else
+            {
+                var errors = result.Errors.Select(e => e.Description);
+                return BadRequest(new { message = "Failed to update profile.", errors });
+            }
 
-            return BadRequest("Failed to update user profile");
         }
+
+        private async Task<string> SaveProfilePicture(IFormFile profilePicture)
+        {
+            // التحقق من امتداد الملف
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+            var extension = Path.GetExtension(profilePicture.FileName).ToLower();
+
+            if (!allowedExtensions.Contains(extension))
+                throw new Exception("Invalid file type. Only .jpg, .jpeg, .png, and .gif are allowed.");
+
+            // التحقق من حجم الملف (أقل من 2 ميجابايت)
+            if (profilePicture.Length > 5 * 1024 * 1024)
+                throw new Exception("File size exceeds 5MB.");
+
+            // إنشاء اسم جديد للملف
+            var fileName = $"{Guid.NewGuid()}{extension}";
+            var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Images", "Profile");
+
+            // التأكد من وجود المجلد
+            Directory.CreateDirectory(folderPath);
+
+            // المسار الكامل للملف
+            var filePath = Path.Combine(folderPath, fileName);
+
+            // حفظ الملف في المسار المحدد
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await profilePicture.CopyToAsync(stream);
+            }
+
+            // إرجاع المسار النسبي
+            return $"/Images/Profile/{fileName}";
+        }
+
 
         [HttpDelete("DeleteAccount")]
         public async Task<IActionResult> DeleteAccount()

@@ -8,16 +8,16 @@ namespace Models
 {
     public class BookEvent
     {
-        public int BookEventId { get; set; } // المفتاح الأساسي
-        public int TestResultID { get; set; } // إشارة إلى نتيجة الاختبار
-        public DateTime EventDateTime { get; set; } = DateTime.Now; // تاريخ ووقت الحدث
+        public int BookEventId { get; set; } 
+        public DateTime EventDateTime { get; set; } = DateTime.Now; 
         public string BookTitle { get; set; } // عنوان الكتاب
         public string? BookImagePath { get; set; } // مسار الصورة
         public string? BookFilePath { get; set; } // مسار الملف
-        public int? DevelopmentStatusID { get; set; }
 
         // العلاقات
+        public int TestResultID { get; set; } // إشارة إلى نتيجة الاختبار
         public TestResult TestResult { get; set; } // العلاقة مع جدول نتائج الاختبارات
+        public int? DevelopmentStatusID { get; set; }
         public DevelopmentStatus? DevelopmentStatus { get; set; }
 
 

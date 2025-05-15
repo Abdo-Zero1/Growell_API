@@ -116,7 +116,6 @@ namespace Growell_API
             builder.Services.AddScoped<ITestResultRepository, TestResultRepository>();
             builder.Services.AddScoped<IDevelopmentStatusRepository, DevelopmentStatusRepository>();
 
-            //builder.Services.AddScoped<DoctorService>();
             var app = builder.Build();
             if (app.Environment.IsDevelopment())
             {

@@ -10,7 +10,7 @@ namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-   // [Authorize(Roles = $"{SD.DoctorRole}")]
+    [Authorize(Roles = $"{SD.DoctorRole},{SD.AdminRole}")]
 
     public class CategoryController : ControllerBase
     {
