@@ -4,6 +4,7 @@ using DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DataAccess.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250516130822_editResults")]
+    partial class editResults
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -285,42 +288,6 @@ namespace DataAccess.Migrations
                     b.ToTable("Categories");
                 });
 
-            modelBuilder.Entity("Models.ContactUs", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsResolved")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsViewed")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("ContactUs");
-                });
-
             modelBuilder.Entity("Models.DevelopmentStatus", b =>
                 {
                     b.Property<int>("DevelopmentStatusID")
@@ -558,17 +525,13 @@ namespace DataAccess.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("VideoEventId"));
 
-                    b.Property<string>("Description")
+                    b.Property<string>("Topic")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("VideoImagePath")
+                    b.Property<string>("VideoFilePath")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("VideoTitle")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("VideoUrl")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -643,17 +606,6 @@ namespace DataAccess.Migrations
                     b.Navigation("DevelopmentStatus");
 
                     b.Navigation("TestResult");
-                });
-
-            modelBuilder.Entity("Models.ContactUs", b =>
-                {
-                    b.HasOne("Models.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Models.Question", b =>

@@ -23,6 +23,7 @@ namespace DataAccess
         //public DbSet<GameEvent> gameEvents  { get; set; }
         public DbSet<VideoEvent> videoEvents   { get; set; }
         public DbSet<BookEvent> bookEvents    { get; set; }
+        public DbSet<ContactUs> ContactUs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

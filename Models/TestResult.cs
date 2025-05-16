@@ -11,7 +11,9 @@ namespace Models
         public int TestResultID { get; set; }
         public int TestID { get; set; }
         public int Score { get; set; }
-        public DateTime TakenAt { get; set; }
+        public DateTime TakenAt { get; set; } = DateTime.Now;
+        public int UserID { get; set; } 
+    //public string UserName { get; set; } // اسم المستخدم
 
         public Test Test { get; set; }
     }
