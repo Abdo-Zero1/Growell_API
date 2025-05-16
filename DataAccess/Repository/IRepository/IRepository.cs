@@ -10,10 +10,10 @@ namespace DataAccess.Repository.IRepository
     
         public interface IRepository<T> where T : class
         {
-            public IEnumerable<T> Get(Expression<Func<T, object>>[]? Include = null, Expression<Func<T, bool>>? expression = null, bool tracked = true);
+        public IEnumerable<T> Get(Expression<Func<T, object>>[]? Include = null, Expression<Func<T, bool>>? expression = null, bool tracked = true);
 
 
-            T? GetOne(Expression<Func<T, object>>[]? includeProps = null, Expression<Func<T, bool>>? expression = null, bool tracked = true);
+        T? GetOne(Expression<Func<T, object>>[]? includeProps = null, Expression<Func<T, bool>>? expression = null, bool tracked = true, object include = null);
 
             void Create(T Entity);
 

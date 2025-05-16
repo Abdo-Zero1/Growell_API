@@ -73,9 +73,10 @@ namespace DataAccess.Repository
                 dbContext.SaveChanges();
             }
 
-
-
-
+        public T? GetOne(Expression<Func<T, object>>[]? includeProps = null, Expression<Func<T, bool>>? expression = null, bool tracked = true, object include = null)
+        {
+            throw new NotImplementedException();
         }
+    }
     
 }
