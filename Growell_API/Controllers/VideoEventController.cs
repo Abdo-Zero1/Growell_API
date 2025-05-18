@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Models;
 using Utility;
 
 namespace Growell_API.Controllers
@@ -29,98 +30,113 @@ namespace Growell_API.Controllers
         [HttpPost("CreateVideoEvent")]
         public IActionResult CreateVideoEvent([FromForm] VideoDTO videoDTO)
         {
-            if (ModelState.IsValid)
+            
+            // التحقق من الفاليديشن
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (videoDTO.VideoImage == null || videoDTO.VideoImage.Length == 0)
+                return BadRequest("Video data and image are required.");
+
+            string fileName = Guid.NewGuid().ToString() + Path.GetExtension(videoDTO.VideoImage.FileName);
+            string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "images", "videos");
+            Directory.CreateDirectory(folderPath);
+            string filePath = Path.Combine(folderPath, fileName);
+
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
             {
-                if (videoDTO.VideoFile != null && videoDTO.VideoFile.Length > 0)
-                {
-                    var fileName = Guid.NewGuid().ToString() + Path.GetExtension(videoDTO.VideoFile.FileName);
-                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "images","videos", fileName);
-
-                    using (var stream = System.IO.File.Create(filePath))
-                    {
-                        videoDTO.VideoFile.CopyTo(stream);
-                    }
-
-                    videoDTO.VideoEvent.VideoFilePath = fileName;
-                }
-
-                videoEventRepository.Create(videoDTO.VideoEvent);
-                videoEventRepository.Commit();
-                return Ok(videoDTO.VideoEvent);
+                videoDTO.VideoImage.CopyTo(stream);
             }
 
-            return BadRequest(ModelState);
+
+            var video = new VideoEvent
+            {
+                VideoTitle = videoDTO.VideoTitle,
+                Description = videoDTO.Description,
+                VideoUrl = videoDTO.VideoUrl,
+                VideoImagePath = $"/images/videos/{fileName}"
+            };
+
+           
+            videoEventRepository.Create(video);
+            videoEventRepository.Commit();
+
+            return Ok(video);
         }
 
-        [HttpGet("{id}")]
-        public IActionResult Get(int Id)
+
+
+
+        [HttpGet("GetById/{id}")]
+        public IActionResult Get(int id)
         {
-            var videoEvent = videoEventRepository.GetOne(expression: e => e.VideoEventId == Id);
-            if(videoEvent == null)
+            var videoEvent = videoEventRepository.GetOne(expression: e => e.VideoEventId == id);
+            if (videoEvent == null)
             {
                 return NotFound("Video Event not found");
             }
             return Ok(videoEvent);
 
         }
-        [HttpPut("{id}")]
-        public IActionResult Put(int id, [FromForm] VideoDTO videoDTO)
-        {
-            if (id != videoDTO.VideoEvent.VideoEventId)
-            {
-                return BadRequest("Invalid Video Event ID.");
-            }
+        //[HttpPut("{id}")]
+        //public IActionResult Put(int id, [FromForm] VideoDTO videoDTO)
+        //{
+        //    if (id != videoDTO.VideoEvent.VideoEventId)
+        //    {
+        //        return BadRequest("Invalid Video Event ID.");
+        //    }
 
-            var videoEvent = videoEventRepository.GetOne(expression: e => e.VideoEventId == id);
-            if (videoEvent == null)
-            {
-                return NotFound("Video Event not found.");
-            }
+        //    var videoEvent = videoEventRepository.GetOne(expression: e => e.VideoEventId == id);
+        //    if (videoEvent == null)
+        //    {
+        //        return NotFound("Video Event not found.");
+        //    }
 
-            //videoEvent.TestResult = videoDTO.VideoEvent.TestResult;
-            videoEvent.VideoTitle = videoDTO.VideoEvent.VideoTitle;
-            videoEvent.Topic = videoDTO.VideoEvent.Topic;
+        //    //videoEvent.TestResult = videoDTO.VideoEvent.TestResult;
+        //    videoEvent.VideoTitle = videoDTO.VideoEvent.VideoTitle;
+        //    videoEvent.Description = videoDTO.VideoEvent.Description;
 
-            if (videoDTO.VideoFile != null && videoDTO.VideoFile.Length > 0)
-            {
-                if (!string.IsNullOrEmpty(videoEvent.VideoFilePath))
-                {
-                    var oldVideoPath = Path.Combine(Directory.GetCurrentDirectory(), "images","Video", videoEvent.VideoFilePath);
-                    if (System.IO.File.Exists(oldVideoPath))
-                    {
-                        System.IO.File.Delete(oldVideoPath);
-                    }
-                }
+        //    if (videoDTO.VideoImage != null && videoDTO.VideoImage.Length > 0)
+        //    {
+        //        if (!string.IsNullOrEmpty(videoEvent.VideoImagePath))
+        //        {
+        //            var oldVideoPath = Path.Combine(Directory.GetCurrentDirectory(), "images","Video", videoEvent.VideoImagePath);
+        //            if (System.IO.File.Exists(oldVideoPath))
+        //            {
+        //                System.IO.File.Delete(oldVideoPath);
+        //            }
+        //        }
 
-                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(videoDTO.VideoFile.FileName);
-                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "images","Video", fileName);
+        //        var fileName = Guid.NewGuid().ToString() + Path.GetExtension(videoDTO.VideoImage.FileName);
+        //        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "images","Video", fileName);
 
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                     videoDTO.VideoFile.CopyToAsync(stream);
-                }
+        //        using (var stream = new FileStream(filePath, FileMode.Create))
+        //        {
+        //             videoDTO.VideoImage.CopyToAsync(stream);
+        //        }
 
-                videoEvent.VideoFilePath = fileName;
-            }
+        //        videoEvent.VideoImagePath = fileName;
+        //    }
 
-               videoEventRepository.Edit(videoEvent);
-               videoEventRepository.Commit();
+        //       videoEventRepository.Edit(videoEvent);
+        //       videoEventRepository.Commit();
 
-            return Ok(videoEvent);
-        }
+        //    return Ok(videoEvent);
+        //}
 
         [HttpDelete("{id}")]
-        public IActionResult Delete(int Id)
+        public IActionResult Delete(int id)
         {
-            var bookEvent = videoEventRepository.GetOne(expression: e => e.VideoEventId == Id);
+            var bookEvent = videoEventRepository.GetOne(expression: e => e.VideoEventId == id);
             if (bookEvent == null)
             {
                 return NotFound("BookEvent not found.");
             }
 
-            if (!string.IsNullOrEmpty(bookEvent.VideoFilePath))
+            if (!string.IsNullOrEmpty(bookEvent.VideoImagePath))
             {
-                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "images", bookEvent.VideoFilePath);
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "images", "videos", bookEvent.VideoImagePath);
                 if (System.IO.File.Exists(filePath))
                 {
                     System.IO.File.Delete(filePath);
