@@ -1,4 +1,5 @@
-﻿using DataAccess.Repository.IRepository;
+﻿using DataAccess.Repository;
+using DataAccess.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -11,19 +12,21 @@ namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = $"{SD.AdminRole},{SD.DoctorRole}")]
+    //[Authorize(Roles = $"{SD.DoctorRole}")]
 
     public class TestController : ControllerBase
     {
         private readonly ITestRepository testRepository;
         private readonly IDoctorRepository doctorRepository;
         private readonly IQuestionRepository questionRepository;
+        private readonly ICategoryRepository categoryRepository;
 
-        public TestController(ITestRepository testRepository, IDoctorRepository doctorRepository,IQuestionRepository questionRepository)
+        public TestController(ITestRepository testRepository, IDoctorRepository doctorRepository,IQuestionRepository questionRepository, ICategoryRepository categoryRepository)
         {
             this.testRepository = testRepository;
             this.doctorRepository = doctorRepository;
             this.questionRepository = questionRepository;
+            this.categoryRepository = categoryRepository;
         }
         [HttpGet("Index")]
         public IActionResult Index()
@@ -40,13 +43,22 @@ namespace Growell_API.Controllers
         [HttpPost("Create")]
         public IActionResult Create([FromBody] Test test)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (test.DoctorID == 0 || test.CategoryID == 0)
+                return BadRequest(new { message = "DoctorID and CategoryID are required." });
+
+            var doctor = doctorRepository.GetOne(null, d => d.DoctorID == test.DoctorID);
+            if (doctor == null)
+                return BadRequest(new { message = "Doctor not found." });
+
+            var category = categoryRepository.GetOne(null, c => c.CategoryID == test.CategoryID);
+            if (category == null)
+                return BadRequest(new { message = "Category not found." });
+
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(new { message = "Invalid data provided", errors = ModelState });
-                }
-
                 testRepository.Create(test);
                 testRepository.Commit();
 
@@ -58,18 +70,18 @@ namespace Growell_API.Controllers
             }
         }
 
-        // Edit an existing test
         [HttpPut("Edit/{id}")]
         public IActionResult Edit(int id, [FromBody] Test test)
         {
             try
             {
-                if (id != test.TestID)
-                {
-                    return BadRequest(new { message = "Test ID mismatch" });
-                }
 
                 var existingTest = testRepository.GetOne(expression: t => t.TestID == id);
+                //if (id != test.TestID)
+                //{
+                //    return BadRequest(new { message = "Test ID mismatch" });
+                //}
+
                 if (existingTest == null)
                 {
                     return NotFound(new { message = "Test not found" });
@@ -93,7 +105,6 @@ namespace Growell_API.Controllers
             }
         }
 
-        // Delete an existing test
         [HttpDelete("Delete/{id}")]
         public IActionResult Delete(int id)
         {

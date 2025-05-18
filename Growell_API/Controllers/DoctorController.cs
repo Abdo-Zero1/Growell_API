@@ -15,7 +15,6 @@ namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = $"{SD.AdminRole}")]
 
     public class DoctorController : ControllerBase
     {
@@ -25,6 +24,8 @@ namespace Growell_API.Controllers
         {
             this.doctorRepository = doctorRepository;
         }
+        [Authorize(Roles = $"{SD.AdminRole}")]
+
         [HttpGet("Get")]
         public IActionResult Index(int page = 1, int pageSize = 10)
         {
@@ -50,6 +51,8 @@ namespace Growell_API.Controllers
 
 
         [HttpPost]
+        [Authorize(Roles = $"{SD.AdminRole}")]
+
         public IActionResult CreateDoctor([FromForm] DoctorDTO doctorDTO)
         {
             if (!ModelState.IsValid)
@@ -97,6 +100,8 @@ namespace Growell_API.Controllers
 
             return Ok(new { message = "Doctor created successfully", doctorId = doctor.DoctorID });
         }
+        [Authorize(Roles = $"{SD.DoctorRole}")]
+
         [HttpPut("{id}")]
         public IActionResult EditDoctor(int id, [FromForm] DoctorEditDTO dto)
         {
@@ -130,6 +135,7 @@ namespace Growell_API.Controllers
 
             return Ok(new { message = "Doctor updated successfully", doctorId = existingDoctor.DoctorID });
         }
+        [Authorize(Roles = $"{SD.AdminRole}")]
 
         [HttpDelete("{id}")]
         public IActionResult DeleteDoctor(int id)

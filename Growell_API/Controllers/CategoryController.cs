@@ -10,7 +10,7 @@ namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = $"{SD.DoctorRole},{SD.AdminRole}")]
+   // [Authorize(Roles = $"{SD.DoctorRole}")]
 
     public class CategoryController : ControllerBase
     {
@@ -33,19 +33,19 @@ namespace Growell_API.Controllers
 
         [HttpPost]
         [Route("Create")]
-        public IActionResult Create(Category category)
+        public IActionResult Create([FromBody]Category category)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                
-                categoryRepository.Create(category);
-                categoryRepository.Commit();
-
-                
-                return CreatedAtAction(nameof(Category), new { id = category }, category);
+                return BadRequest(ModelState);
             }
-            return Ok(category);  
+
+            categoryRepository.Create(category);
+            categoryRepository.Commit();
+
+            return CreatedAtAction(nameof(GetCategory), new { CategoryId = category.CategoryID }, category);
         }
+
         [HttpGet("{CategoryId}")]
         public IActionResult GetCategory(int CategoryId)
         {
@@ -60,19 +60,35 @@ namespace Growell_API.Controllers
         [Route("Edit")]
         public IActionResult Edit([FromBody] Category category)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var existingCategory = categoryRepository.GetOne(expression: e => e.CategoryID == category.CategoryID);
-                if (existingCategory == null)
-                    return NotFound(new { message = "Category not found." });
-
-                categoryRepository.Edit(category);
-                categoryRepository.Commit();
-
-                return Ok(new { message = "Category updated successfully.", category });
+                return BadRequest(new
+                {
+                    message = "Invalid data.",
+                    errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))
+                });
             }
 
-            return BadRequest(new { message = "Invalid data.", errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)) });
+            var existingCategory = categoryRepository.GetOne(expression: e => e.CategoryID == category.CategoryID);
+            if (existingCategory == null)
+            {
+                return NotFound(new { message = "Category not found." });
+            }
+
+            existingCategory.Name = category.Name;
+            existingCategory.Description = category.Description;
+
+            try
+            {
+                categoryRepository.Edit(existingCategory); 
+                categoryRepository.Commit(); 
+
+                return Ok(new { message = "Category updated successfully.", category = existingCategory });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while updating the category.", error = ex.Message });
+            }
         }
 
         [HttpDelete("{categoryId}")]

@@ -13,7 +13,7 @@ namespace Models
         public int TestID { get; set; }
         public int Score { get; set; }
         public DateTime TakenAt { get; set; } = DateTime.Now;
-        public string UserID { get; set; } // FK للمستخدم
+        public string UserID { get; set; } 
         public int? DoctorID { get; set; }
         [JsonIgnore]
         public Doctor Doctor { get; set; }

@@ -9,6 +9,7 @@ namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+  //  [Authorize]
     public class HomeController : ControllerBase
     {
         private readonly IDoctorRepository doctorRepository;

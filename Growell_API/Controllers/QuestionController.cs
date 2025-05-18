@@ -11,15 +11,17 @@ namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = $"{SD.AdminRole},{SD.DoctorRole}")]
+    [Authorize(Roles = $"{SD.DoctorRole}")]
 
     public class QuestionController : ControllerBase
     {
         private readonly IQuestionRepository questionRepository;
+        private readonly ITestRepository testRepository;
 
-        public QuestionController(IQuestionRepository questionRepository)
+        public QuestionController(IQuestionRepository questionRepository, ITestRepository testRepository)
         {
             this.questionRepository = questionRepository;
+            this.testRepository = testRepository;
         }
         [HttpGet("Index")]
         public IActionResult Index()
@@ -27,43 +29,71 @@ namespace Growell_API.Controllers
             var Question = questionRepository.Get();
             return Ok(Question);
         }
+
         [HttpPost("Create")]
         public IActionResult Create([FromBody] Question question)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                try
+                return BadRequest(new
                 {
-                    question.CreatedAt = DateTime.Now;
-
-                    questionRepository.Create(question);
-                    questionRepository.Commit();
-
-                    return Ok(new
-                    {
-                        message = "Question created successfully.",
-                        question
-                    });
-                }
-                catch (Exception ex)
-                {
-                    return StatusCode(500, new { message = "An error occurred while creating the question.", error = ex.Message });
-                }
+                    message = "Invalid data.",
+                    errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))
+                });
             }
 
-            return BadRequest(new { message = "Invalid data.", errors = ModelState.Values.SelectMany(v => v.Errors) });
-        }
-        //[HttpGet("{id}")]
-        //public IActionResult Get(int Id)
-        //{
-        //    var question = questionRepository.GetOne(expression: g => g.QuestionID == Id);
-        //    if (question == null)
-        //    {
-        //        return NotFound("question not found");
-        //    }
-        //    return Ok(question);
+            try
+            {
+                var relatedTest = testRepository.GetOne(null, t => t.TestID == question.TestID);
+                if (relatedTest == null)
+                {
+                    return NotFound(new { message = "The associated test does not exist." });
+                }
 
-        //}
+                question.CreatedAt = DateTime.Now;
+
+                questionRepository.Create(question);
+                questionRepository.Commit();
+
+                return Ok(new
+                {
+                    message = "Question created successfully.",
+                    question
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "An error occurred while creating the question.",
+                    error = ex.Message
+                });
+            }
+        }
+
+
+
+        [HttpGet("{id}")]
+        public IActionResult Get(int id)
+        {
+            var question = questionRepository.GetOne(null, g => g.QuestionID == id);
+
+            if (question == null)
+            {
+                return NotFound(new
+                {
+                    message = "Question not found.",
+                    questionId = id
+                });
+            }
+
+            return Ok(new
+            {
+                message = "Question retrieved successfully.",
+                question
+            });
+        }
+
 
         [HttpPut("Edit{id}")]
         public IActionResult Edit(int id, [FromBody] Question updatedQuestion)

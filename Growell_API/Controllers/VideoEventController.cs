@@ -12,7 +12,7 @@ namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-   // [Authorize(Roles = $"{SD.AdminRole},{SD.DoctorRole}")]
+    [Authorize(Roles = $"{SD.DoctorRole}")]
     public class VideoEventController : ControllerBase
     {
         private readonly IVideoEventRepository videoEventRepository;
@@ -31,7 +31,6 @@ namespace Growell_API.Controllers
         public IActionResult CreateVideoEvent([FromForm] VideoDTO videoDTO)
         {
             
-            // التحقق من الفاليديشن
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 

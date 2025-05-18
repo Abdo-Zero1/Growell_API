@@ -261,7 +261,7 @@ namespace DataAccess.Migrations
 
                     b.HasIndex("TestResultID");
 
-                    b.ToTable("bookEvents", (string)null);
+                    b.ToTable("bookEvents");
                 });
 
             modelBuilder.Entity("Models.Category", b =>
@@ -273,16 +273,17 @@ namespace DataAccess.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CategoryID"));
 
                     b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.HasKey("CategoryID");
 
-                    b.ToTable("Categories", (string)null);
+                    b.ToTable("Categories");
                 });
 
             modelBuilder.Entity("Models.ContactUs", b =>
@@ -318,7 +319,7 @@ namespace DataAccess.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ContactUs", (string)null);
+                    b.ToTable("ContactUs");
                 });
 
             modelBuilder.Entity("Models.DevelopmentStatus", b =>
@@ -339,7 +340,7 @@ namespace DataAccess.Migrations
 
                     b.HasKey("DevelopmentStatusID");
 
-                    b.ToTable("DevelopmentStatuses", (string)null);
+                    b.ToTable("DevelopmentStatuses");
                 });
 
             modelBuilder.Entity("Models.Doctor", b =>
@@ -388,7 +389,6 @@ namespace DataAccess.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ImgUrl")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LastName")
@@ -412,7 +412,7 @@ namespace DataAccess.Migrations
 
                     b.HasKey("DoctorID");
 
-                    b.ToTable("Doctors", (string)null);
+                    b.ToTable("Doctors");
                 });
 
             modelBuilder.Entity("Models.Question", b =>
@@ -463,7 +463,7 @@ namespace DataAccess.Migrations
 
                     b.HasIndex("TestID");
 
-                    b.ToTable("Questions", (string)null);
+                    b.ToTable("Questions");
                 });
 
             modelBuilder.Entity("Models.Session", b =>
@@ -483,7 +483,7 @@ namespace DataAccess.Migrations
 
                     b.HasKey("SessionId");
 
-                    b.ToTable("Sessions", (string)null);
+                    b.ToTable("Sessions");
                 });
 
             modelBuilder.Entity("Models.Test", b =>
@@ -499,7 +499,8 @@ namespace DataAccess.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<int>("DoctorID")
                         .HasColumnType("int");
@@ -512,7 +513,8 @@ namespace DataAccess.Migrations
 
                     b.Property<string>("TestName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("TestID");
 
@@ -520,7 +522,7 @@ namespace DataAccess.Migrations
 
                     b.HasIndex("DoctorID");
 
-                    b.ToTable("Tests", (string)null);
+                    b.ToTable("Tests");
                 });
 
             modelBuilder.Entity("Models.TestResult", b =>
@@ -555,7 +557,7 @@ namespace DataAccess.Migrations
 
                     b.HasIndex("UserID");
 
-                    b.ToTable("TestResults", (string)null);
+                    b.ToTable("TestResults");
                 });
 
             modelBuilder.Entity("Models.VideoEvent", b =>
@@ -582,7 +584,7 @@ namespace DataAccess.Migrations
 
                     b.HasKey("VideoEventId");
 
-                    b.ToTable("videoEvents", (string)null);
+                    b.ToTable("videoEvents");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
