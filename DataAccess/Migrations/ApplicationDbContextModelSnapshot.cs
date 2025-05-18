@@ -261,7 +261,7 @@ namespace DataAccess.Migrations
 
                     b.HasIndex("TestResultID");
 
-                    b.ToTable("bookEvents");
+                    b.ToTable("bookEvents", (string)null);
                 });
 
             modelBuilder.Entity("Models.Category", b =>
@@ -282,7 +282,7 @@ namespace DataAccess.Migrations
 
                     b.HasKey("CategoryID");
 
-                    b.ToTable("Categories");
+                    b.ToTable("Categories", (string)null);
                 });
 
             modelBuilder.Entity("Models.ContactUs", b =>
@@ -318,7 +318,7 @@ namespace DataAccess.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ContactUs");
+                    b.ToTable("ContactUs", (string)null);
                 });
 
             modelBuilder.Entity("Models.DevelopmentStatus", b =>
@@ -339,7 +339,7 @@ namespace DataAccess.Migrations
 
                     b.HasKey("DevelopmentStatusID");
 
-                    b.ToTable("DevelopmentStatuses");
+                    b.ToTable("DevelopmentStatuses", (string)null);
                 });
 
             modelBuilder.Entity("Models.Doctor", b =>
@@ -412,7 +412,7 @@ namespace DataAccess.Migrations
 
                     b.HasKey("DoctorID");
 
-                    b.ToTable("Doctors");
+                    b.ToTable("Doctors", (string)null);
                 });
 
             modelBuilder.Entity("Models.Question", b =>
@@ -463,7 +463,7 @@ namespace DataAccess.Migrations
 
                     b.HasIndex("TestID");
 
-                    b.ToTable("Questions");
+                    b.ToTable("Questions", (string)null);
                 });
 
             modelBuilder.Entity("Models.Session", b =>
@@ -483,7 +483,7 @@ namespace DataAccess.Migrations
 
                     b.HasKey("SessionId");
 
-                    b.ToTable("Sessions");
+                    b.ToTable("Sessions", (string)null);
                 });
 
             modelBuilder.Entity("Models.Test", b =>
@@ -520,7 +520,7 @@ namespace DataAccess.Migrations
 
                     b.HasIndex("DoctorID");
 
-                    b.ToTable("Tests");
+                    b.ToTable("Tests", (string)null);
                 });
 
             modelBuilder.Entity("Models.TestResult", b =>
@@ -531,6 +531,9 @@ namespace DataAccess.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TestResultID"));
 
+                    b.Property<int?>("DoctorID")
+                        .HasColumnType("int");
+
                     b.Property<int>("Score")
                         .HasColumnType("int");
 
@@ -540,14 +543,19 @@ namespace DataAccess.Migrations
                     b.Property<int>("TestID")
                         .HasColumnType("int");
 
-                    b.Property<int>("UserID")
-                        .HasColumnType("int");
+                    b.Property<string>("UserID")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("TestResultID");
 
+                    b.HasIndex("DoctorID");
+
                     b.HasIndex("TestID");
 
-                    b.ToTable("TestResults");
+                    b.HasIndex("UserID");
+
+                    b.ToTable("TestResults", (string)null);
                 });
 
             modelBuilder.Entity("Models.VideoEvent", b =>
@@ -570,7 +578,7 @@ namespace DataAccess.Migrations
 
                     b.HasKey("VideoEventId");
 
-                    b.ToTable("videoEvents");
+                    b.ToTable("videoEvents", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -684,13 +692,33 @@ namespace DataAccess.Migrations
 
             modelBuilder.Entity("Models.TestResult", b =>
                 {
+                    b.HasOne("Models.Doctor", "Doctor")
+                        .WithMany("TestResults")
+                        .HasForeignKey("DoctorID")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Models.Test", "Test")
                         .WithMany("TestResults")
                         .HasForeignKey("TestID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Models.ApplicationUser", "applicationUser")
+                        .WithMany("TestResults")
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Doctor");
+
                     b.Navigation("Test");
+
+                    b.Navigation("applicationUser");
+                });
+
+            modelBuilder.Entity("Models.ApplicationUser", b =>
+                {
+                    b.Navigation("TestResults");
                 });
 
             modelBuilder.Entity("Models.Category", b =>
@@ -705,6 +733,8 @@ namespace DataAccess.Migrations
 
             modelBuilder.Entity("Models.Doctor", b =>
                 {
+                    b.Navigation("TestResults");
+
                     b.Navigation("Tests");
                 });
 

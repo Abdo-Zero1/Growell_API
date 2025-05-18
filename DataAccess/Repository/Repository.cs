@@ -47,8 +47,9 @@ namespace DataAccess.Repository
             {
                 return Get(includeProps, expression, tracked).FirstOrDefault();
             }
+         
 
-            public void Create(T Entity)
+        public void Create(T Entity)
             {
                 dbSet.Add(Entity);
 
@@ -73,10 +74,10 @@ namespace DataAccess.Repository
                 dbContext.SaveChanges();
             }
 
-        public T? GetOne(Expression<Func<T, object>>[]? includeProps = null, Expression<Func<T, bool>>? expression = null, bool tracked = true, object include = null)
-        {
-            throw new NotImplementedException();
-        }
+        //public T? GetOne(Expression<Func<T, object>>[]? includeProps = null, Expression<Func<T, bool>>? expression = null, bool tracked = true, object include = null)
+        //{
+        //    throw new NotImplementedException();
+        //}
     }
     
 }

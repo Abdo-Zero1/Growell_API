@@ -37,7 +37,6 @@ namespace Growell_API.Controllers
             return Ok(tests);
         }
 
-        // Create a new test
         [HttpPost("Create")]
         public IActionResult Create([FromBody] Test test)
         {

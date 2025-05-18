@@ -48,6 +48,24 @@ namespace DataAccess
                 .HasForeignKey(tr => tr.TestID)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<TestResult>()
+              .HasOne(tr => tr.applicationUser)
+              .WithMany(u => u.TestResults)
+              .HasForeignKey(tr => tr.UserID)
+              .OnDelete(DeleteBehavior.Restrict);
+
+            // علاقة بين TestResult و Doctor
+            modelBuilder.Entity<TestResult>()
+                .HasOne(tr => tr.Doctor)
+                .WithMany(d => d.TestResults)
+                .HasForeignKey(tr => tr.DoctorID)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // علاقة بين TestResult و Test
+            modelBuilder.Entity<TestResult>()
+                .HasOne(tr => tr.Test)
+                .WithMany(t => t.TestResults)
+                .HasForeignKey(tr => tr.TestID);
 
 
 

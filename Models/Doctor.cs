@@ -1,4 +1,6 @@
-﻿namespace Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Models
 {
     public class Doctor
     {
@@ -20,9 +22,15 @@
         public int YearsOfExperience { get; set; } 
         public string Education { get; set; } 
         public int Age { get; set; }
-        public string ImgUrl { get; set; }
+        public string? ImgUrl { get; set; }
 
         public ICollection<Test> Tests { get; set; }
+        public ICollection<TestResult> TestResults { get; set; }
+
+        //public string UserId { get; set; } 
+        //[ForeignKey("UserId")]
+        //public ApplicationUser User { get; set; }
+
 
 
     }

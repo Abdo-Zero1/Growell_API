@@ -36,6 +36,7 @@
 	<ItemGroup>
 	  <Folder Include="images\Game\" />
 	  <Folder Include="images\file\" />
+	  <Folder Include="images\Doctor\" />
 	  <Folder Include="images\Profile\" />
 	  <Folder Include="Services\" />
 	</ItemGroup>

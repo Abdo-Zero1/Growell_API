@@ -11,5 +11,7 @@ namespace Models
     {
         public string Adderss { get; set; }
         public string ProfilePicturePath { get; set; }
+
+        public ICollection<TestResult> TestResults { get; set; }
     }
 }

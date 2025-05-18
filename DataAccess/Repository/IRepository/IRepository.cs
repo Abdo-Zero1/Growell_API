@@ -13,7 +13,7 @@ namespace DataAccess.Repository.IRepository
         public IEnumerable<T> Get(Expression<Func<T, object>>[]? Include = null, Expression<Func<T, bool>>? expression = null, bool tracked = true);
 
 
-        T? GetOne(Expression<Func<T, object>>[]? includeProps = null, Expression<Func<T, bool>>? expression = null, bool tracked = true, object include = null);
+        T? GetOne(Expression<Func<T, object>>[]? includeProps = null, Expression<Func<T, bool>>? expression = null, bool tracked = true/*, object include = null*/);
 
             void Create(T Entity);
 

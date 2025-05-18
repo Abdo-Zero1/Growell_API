@@ -1,13 +1,16 @@
 ﻿using DataAccess.Repository.IRepository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Models;
 using System.Linq.Expressions;
+using System.Security.Claims;
 
 namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class TestHomeController : ControllerBase
     {
         private readonly ITestRepository testRepository;
@@ -68,14 +71,20 @@ namespace Growell_API.Controllers
 
 
 
-
+        [Authorize]
         [HttpPost("{testId}/submit")]
-        public IActionResult SubmitTest(int UserId ,int testId, [FromBody] List<int> userAnswers)
+        public IActionResult SubmitTest(int testId, [FromBody] List<int> userAnswers)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User not authenticated" });
+            }
+
             var tests = testRepository.Get(
-                /*includeProps:*/ new Expression<Func<Test, object>>[] { t => t.Questions },
-                expression: t => t.TestID == testId,
-                tracked: true
+                new Expression<Func<Test, object>>[] { t => t.Questions },
+                t => t.TestID == testId,
+                true
             );
 
             var test = tests.FirstOrDefault();
@@ -101,7 +110,8 @@ namespace Growell_API.Controllers
                     score++;
                 }
             }
-            saveReslut(UserId, testId, score);
+
+            saveResult(userId, testId, score);
 
             return Ok(new
             {
@@ -110,19 +120,22 @@ namespace Growell_API.Controllers
                 Score = $"{score}/{questions.Count}"
             });
         }
-        
-        private async void saveReslut(int userid, int testId, int score)
+
+        private void saveResult(string userId, int testId, int score)
         {
             testResultRepository.Create(new TestResult
             {
-                UserID = userid, 
+                UserID = userId,
                 TestID = testId,
                 Score = score,
-                TakenAt = DateTime.Now
-            });
+                TakenAt = DateTime.Now,
+                
 
-         testResultRepository.Commit();
+            });
+            testResultRepository.Commit();
         }
+
+
 
 
     }

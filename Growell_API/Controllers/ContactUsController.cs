@@ -69,7 +69,6 @@ namespace Growell_API.Controllers
         }
 
 
-        //// حذف شكوى
         [HttpDelete("{id}")]
         public IActionResult DeleteComplaint(int id)
         {
