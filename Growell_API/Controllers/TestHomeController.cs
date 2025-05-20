@@ -71,9 +71,8 @@ namespace Growell_API.Controllers
 
 
 
-        [Authorize]
         [HttpPost("{testId}/submit")]
-        public IActionResult SubmitTest(int testId, [FromBody] List<int> userAnswers)
+        public IActionResult SubmitTest(int testId, [FromBody] List<string> userAnswers)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
@@ -105,13 +104,14 @@ namespace Growell_API.Controllers
 
             for (int i = 0; i < questions.Count; i++)
             {
-                if (questions[i].CorrectAnswer == userAnswers[i].ToString())
+                // Compare the provided answer with the correct answer, ignoring case and trimming spaces
+                if (string.Equals(questions[i].CorrectAnswer?.Trim(), userAnswers[i]?.Trim(), StringComparison.OrdinalIgnoreCase))
                 {
                     score++;
                 }
             }
 
-            saveResult(userId, testId, score);
+            SaveResult(userId, testId, score);
 
             return Ok(new
             {
@@ -121,19 +121,34 @@ namespace Growell_API.Controllers
             });
         }
 
-        private void saveResult(string userId, int testId, int score)
+        private void SaveResult(string userId, int testId, int score)
         {
-            testResultRepository.Create(new TestResult
+            var result = new TestResult
             {
                 UserID = userId,
                 TestID = testId,
                 Score = score,
-                TakenAt = DateTime.Now,
-                
+                TakenAt = DateTime.UtcNow
+            };
 
-            });
+            testResultRepository.Create(result);
             testResultRepository.Commit();
         }
+
+
+        //private void saveResult(string userId, int testId, int score)
+        //{
+        //    testResultRepository.Create(new TestResult
+        //    {
+        //        UserID = userId,
+        //        TestID = testId,
+        //        Score = score,
+        //        TakenAt = DateTime.Now,
+                
+
+        //    });
+        //    testResultRepository.Commit();
+        //}
 
 
 

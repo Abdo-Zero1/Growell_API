@@ -1,29 +1,45 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using DataAccess.Repository.IRepository;
-using System.Linq.Expressions;
 using Models;
+using System;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
+using Utility;
 
 namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ContactUsController : ControllerBase
     {
         private readonly IContactUsRepository contactUsRepository;
+        private readonly UserManager<ApplicationUser> userManager;
 
-        public ContactUsController(IContactUsRepository contactUsRepository)
+        public ContactUsController(IContactUsRepository contactUsRepository, UserManager<ApplicationUser> userManager)
         {
             this.contactUsRepository = contactUsRepository;
+            this.userManager = userManager;
         }
+
         [HttpPost]
         public IActionResult SubmitComplaint([FromBody] ContactUs contactUs)
         {
+            var userId = userManager.GetUserId(User);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { Message = "User not authenticated" });
+            }
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
+            contactUs.UserId = userId;
             contactUs.CreatedAt = DateTime.UtcNow;
 
             contactUsRepository.Create(contactUs);
@@ -32,21 +48,25 @@ namespace Growell_API.Controllers
             return Ok(new { Message = "Complaint submitted successfully." });
         }
 
+
         [HttpGet]
+        [Authorize(Roles = $"{SD.DoctorRole},{SD.AdminRole}")]
+
         public IActionResult GetComplaints()
         {
             var contacts = contactUsRepository.Get(
-                new Expression<Func<ContactUs, object>>[] { c => c.User }, 
-                null, 
-                true  
+                new Expression<Func<ContactUs, object>>[] { c => c.User },
+                null,
+                true
             );
 
             return Ok(contacts);
         }
 
-
         [HttpPut("{id}")]
-        public IActionResult UpdateComplaintStatus(int id, [FromBody] ContactUs updatedContact)
+        [Authorize(Roles = $"{SD.DoctorRole},{SD.AdminRole}")]
+
+        public async Task<IActionResult> UpdateComplaintStatus(int id, [FromBody] ContactUs updatedContact)
         {
             var complaint = contactUsRepository.Get(
                 new Expression<Func<ContactUs, object>>[] { c => c.User },
@@ -59,6 +79,21 @@ namespace Growell_API.Controllers
                 return NotFound(new { Message = "Complaint not found." });
             }
 
+            var user = await userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return Unauthorized(new { Message = "User not authenticated." });
+            }
+
+            var roles = await userManager.GetRolesAsync(user);
+
+            if (!roles.Contains("Doctor"))
+            {
+                return Forbid("Only admins can update complaint status.");
+                
+                return Forbid("Only admins can update complaint status.");
+            }
+
             complaint.IsResolved = updatedContact.IsResolved;
             complaint.IsViewed = updatedContact.IsViewed;
 
@@ -68,8 +103,9 @@ namespace Growell_API.Controllers
             return Ok(new { Message = "Complaint status updated successfully." });
         }
 
+            [HttpDelete("{id}")]
+        [Authorize(Roles = $"{SD.AdminRole},{SD.DoctorRole}")]
 
-        [HttpDelete("{id}")]
         public IActionResult DeleteComplaint(int id)
         {
             var contact = contactUsRepository.Get(
@@ -86,6 +122,5 @@ namespace Growell_API.Controllers
 
             return Ok(new { Message = "Complaint deleted successfully." });
         }
-
     }
 }

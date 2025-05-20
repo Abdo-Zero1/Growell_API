@@ -24,6 +24,7 @@ namespace DataAccess
         public DbSet<VideoEvent> videoEvents   { get; set; }
         public DbSet<BookEvent> bookEvents    { get; set; }
         public DbSet<ContactUs> ContactUs { get; set; }
+        public DbSet<UserReport> userReports { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

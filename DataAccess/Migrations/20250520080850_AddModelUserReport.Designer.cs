@@ -4,6 +4,7 @@ using DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DataAccess.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250520080850_AddModelUserReport")]
+    partial class AddModelUserReport
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -406,10 +409,6 @@ namespace DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("UserID")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int>("YearsOfExperience")
                         .HasColumnType("int");
 
@@ -536,9 +535,6 @@ namespace DataAccess.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TestResultID"));
 
-                    b.Property<int>("CategoryID")
-                        .HasColumnType("int");
-
                     b.Property<int?>("DoctorID")
                         .HasColumnType("int");
 
@@ -564,63 +560,6 @@ namespace DataAccess.Migrations
                     b.HasIndex("UserID");
 
                     b.ToTable("TestResults");
-                });
-
-            modelBuilder.Entity("Models.TestResultDetails", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("Score")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("TakenAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("TestID")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("UserReportId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserReportId");
-
-                    b.ToTable("TestResultDetails");
-                });
-
-            modelBuilder.Entity("Models.UserReport", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Classification")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("MaxScore")
-                        .HasColumnType("int");
-
-                    b.Property<double>("Percentage")
-                        .HasColumnType("float");
-
-                    b.Property<int>("TotalScore")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserID")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("userReports");
                 });
 
             modelBuilder.Entity("Models.VideoEvent", b =>
@@ -783,13 +722,6 @@ namespace DataAccess.Migrations
                     b.Navigation("applicationUser");
                 });
 
-            modelBuilder.Entity("Models.TestResultDetails", b =>
-                {
-                    b.HasOne("Models.UserReport", null)
-                        .WithMany("TestDetails")
-                        .HasForeignKey("UserReportId");
-                });
-
             modelBuilder.Entity("Models.ApplicationUser", b =>
                 {
                     b.Navigation("TestResults");
@@ -817,11 +749,6 @@ namespace DataAccess.Migrations
                     b.Navigation("Questions");
 
                     b.Navigation("TestResults");
-                });
-
-            modelBuilder.Entity("Models.UserReport", b =>
-                {
-                    b.Navigation("TestDetails");
                 });
 #pragma warning restore 612, 618
         }

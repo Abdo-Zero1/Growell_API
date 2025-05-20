@@ -13,7 +13,7 @@ namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = $"{SD.AdminRole},{SD.DoctorRole}")]
+   [Authorize(Roles = $"{SD.AdminRole},{SD.DoctorRole}")]
     public class TestResultController : ControllerBase
     {
         private readonly ITestResultRepository testResultRepository;
