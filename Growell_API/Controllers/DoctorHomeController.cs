@@ -2,6 +2,7 @@
 using DataAccess.Repository.IRepository;
 using Microsoft.AspNetCore.Mvc;
 using Models;
+using System.Linq;
 
 namespace Growell_API.Controllers
 {
@@ -25,7 +26,7 @@ namespace Growell_API.Controllers
                 .OrderByDescending(d => d.AveRating)
                 .Select(d => new
                 {
-                    ID= d.DoctorID,
+                    ID = d.DoctorID,
                     Image = d.ImgUrl,
                     FullName = $"{d.FirstName} {d.LastName}",
                     Bio = d.Bio,
@@ -61,7 +62,8 @@ namespace Growell_API.Controllers
                     YearsOfExperience = d.YearsOfExperience,
                     Education = d.Education,
                     Age = d.Age,
-
+                    AboutOfKids = d.AboutOfKids,
+                    TargetAgeGroup = d.TargetAgeGroup,
                     Tests = d.Tests.Select(t => new { t.TestID, t.TestName }),
                 })
                 .FirstOrDefault();
@@ -74,12 +76,28 @@ namespace Growell_API.Controllers
             return Ok(doctor);
         }
 
+        [HttpGet("photo/{doctorId}")]
+        public IActionResult GetPhotoUrl(int doctorId)
+        {
+            var doctor = doctorRepository.GetOne(expression:d=>d.DoctorID==doctorId);
+            if (doctor == null)
+            {
+                return NotFound(new { Message = "Doctor not found" });
+            }
+
+            var imageUrl = string.IsNullOrEmpty(doctor.ImgUrl)
+                ? $"{Request.Scheme}://{Request.Host}/images/default.jpg"
+                : $"{Request.Scheme}://{Request.Host}/{doctor.ImgUrl}";
+
+            return Ok(new { url = imageUrl });
+        }
+
         [HttpGet("{doctorId}/tests")]
         public IActionResult GetTestsByDoctor(int doctorId)
         {
             var tests = testRepository.Get(
-               // includeProps: null, 
-                expression: t => t.DoctorID == doctorId, Include: [t => t.Category, t => t.Doctor], tracked: true
+                expression: t => t.DoctorID == doctorId,
+                Include: [t => t.Category, t => t.Doctor]
             ).Select(t => new
             {
                 TestID = t.TestID,
@@ -87,7 +105,7 @@ namespace Growell_API.Controllers
                 Description = t.Description,
                 NumberOfQuestions = t.NumberOfQuestions,
                 IsActive = t.IsActive,
-                Category= t.CategoryID,
+                Category = t.CategoryID,
                 CategoryName = t.Category.Name,
             }).ToList();
 
@@ -98,6 +116,7 @@ namespace Growell_API.Controllers
 
             return Ok(tests);
         }
+
         [HttpGet("search")]
         public IActionResult Search(string searchTerm)
         {
@@ -119,9 +138,9 @@ namespace Growell_API.Controllers
                     FullName = $"{d.FirstName} {d.LastName}",
                     Bio = d.Bio,
                     Specialization = d.Specialization,
-                    Rating = d.AveRating 
+                    Rating = d.AveRating
                 })
-                .OrderByDescending(d => d.Rating) 
+                .OrderByDescending(d => d.Rating)
                 .ToList();
 
             if (doctors.Count == 0)
@@ -131,8 +150,5 @@ namespace Growell_API.Controllers
 
             return Ok(doctors);
         }
-
-
-
     }
 }

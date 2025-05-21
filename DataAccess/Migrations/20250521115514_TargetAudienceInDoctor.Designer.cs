@@ -4,6 +4,7 @@ using DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DataAccess.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250521115514_TargetAudienceInDoctor")]
+    partial class TargetAudienceInDoctor
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -236,6 +239,9 @@ namespace DataAccess.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BookEventId"));
 
+                    b.Property<string>("BookFilePath")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("BookImagePath")
                         .HasColumnType("nvarchar(max)");
 
@@ -243,19 +249,20 @@ namespace DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("BookUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int?>("DevelopmentStatusID")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("EventDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("TestResultID")
                         .HasColumnType("int");
 
                     b.HasKey("BookEventId");
 
                     b.HasIndex("DevelopmentStatusID");
+
+                    b.HasIndex("TestResultID");
 
                     b.ToTable("bookEvents");
                 });
@@ -350,9 +357,6 @@ namespace DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("AboutOfKids")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int>("Age")
                         .HasColumnType("int");
 
@@ -405,8 +409,7 @@ namespace DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("TargetAgeGroup")
-                        .IsRequired()
+                    b.Property<string>("TargetAudience")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserID")
@@ -706,9 +709,19 @@ namespace DataAccess.Migrations
 
             modelBuilder.Entity("Models.BookEvent", b =>
                 {
-                    b.HasOne("Models.DevelopmentStatus", null)
+                    b.HasOne("Models.DevelopmentStatus", "DevelopmentStatus")
                         .WithMany("BookEvents")
                         .HasForeignKey("DevelopmentStatusID");
+
+                    b.HasOne("Models.TestResult", "TestResult")
+                        .WithMany()
+                        .HasForeignKey("TestResultID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DevelopmentStatus");
+
+                    b.Navigation("TestResult");
                 });
 
             modelBuilder.Entity("Models.ContactUs", b =>

@@ -13,7 +13,11 @@ namespace Models
         public string Bio { get; set; } = null;
 
         public string AboutMe { get; set; } = null;
-       
+        public string? AboutOfKids { get; set; }
+        public string TargetAgeGroup { get; set; } 
+
+
+
         public string Description { get; set; } 
         public int AveRating { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -28,9 +32,7 @@ namespace Models
         public ICollection<TestResult> TestResults { get; set; }
         public string UserID { get; set; }
 
-        //public string UserId { get; set; } 
-        //[ForeignKey("UserId")]
-        //public ApplicationUser User { get; set; }
+        
 
 
 
