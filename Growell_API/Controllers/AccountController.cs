@@ -176,6 +176,29 @@ namespace Growell_API.Controllers
             }
             return BadRequest(result.Errors);
         }
+        [HttpGet("Profile")]
+        [Authorize]
+        public async Task<IActionResult> GetProfile()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null)
+                return Unauthorized(new { error = "Authorization error", message = "User ID is missing or invalid." });
+
+            var user = await userManager.FindByIdAsync(userId);
+            if (user == null)
+                return NotFound(new { error = "Not Found", message = "The requested user does not exist." });
+
+            var userData = new
+            {
+                user.UserName,
+                user.Email,
+                user.PhoneNumber,
+                ProfilePicturePath = user.ProfilePicturePath ?? "/images/default-profile.png"
+            };
+
+            return Ok(userData);
+        }
+
 
         [HttpPost("Profile/Update")]
         public async Task<IActionResult> UpdateProfile([FromForm] ProfileDTO profileDTO)
@@ -188,13 +211,21 @@ namespace Growell_API.Controllers
             if (user == null)
                 return NotFound(new { error = "Not Found", message = "The requested user does not exist." });
 
-            // تحديث الاسم إذا تم تقديمه
             if (!string.IsNullOrEmpty(profileDTO.UserName))
             {
                 user.UserName = profileDTO.UserName;
             }
 
-            // تحديث الصورة إذا تم تقديمها
+            if (!string.IsNullOrEmpty(profileDTO.Email))
+            {
+                user.Email = profileDTO.Email;
+            }
+
+            if (!string.IsNullOrEmpty(profileDTO.PhoneNumber))
+            {
+                user.PhoneNumber = profileDTO.PhoneNumber;
+            }
+
             if (profileDTO.ProfilePicture != null && profileDTO.ProfilePicture.Length > 0)
             {
                 try
@@ -217,6 +248,8 @@ namespace Growell_API.Controllers
                     userData = new
                     {
                         user.UserName,
+                        user.Email,
+                        user.PhoneNumber,
                         user.ProfilePicturePath
                     }
                 });
@@ -226,39 +259,32 @@ namespace Growell_API.Controllers
                 var errors = result.Errors.Select(e => e.Description);
                 return BadRequest(new { message = "Failed to update profile.", errors });
             }
-
         }
+
 
         private async Task<string> SaveProfilePicture(IFormFile profilePicture)
         {
-            // التحقق من امتداد الملف
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
             var extension = Path.GetExtension(profilePicture.FileName).ToLower();
 
             if (!allowedExtensions.Contains(extension))
                 throw new Exception("Invalid file type. Only .jpg, .jpeg, .png, and .gif are allowed.");
 
-            // التحقق من حجم الملف (أقل من 2 ميجابايت)
             if (profilePicture.Length > 5 * 1024 * 1024)
                 throw new Exception("File size exceeds 5MB.");
 
-            // إنشاء اسم جديد للملف
             var fileName = $"{Guid.NewGuid()}{extension}";
             var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Images", "Profile");
 
-            // التأكد من وجود المجلد
             Directory.CreateDirectory(folderPath);
 
-            // المسار الكامل للملف
             var filePath = Path.Combine(folderPath, fileName);
 
-            // حفظ الملف في المسار المحدد
             using (var stream = new FileStream(filePath, FileMode.Create))
             {
                 await profilePicture.CopyToAsync(stream);
             }
 
-            // إرجاع المسار النسبي
             return $"/Images/Profile/{fileName}";
         }
 

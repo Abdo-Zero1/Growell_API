@@ -10,7 +10,7 @@ namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-   // [Authorize]
+    [Authorize]
     public class TestHomeController : ControllerBase
     {
         private readonly ITestRepository testRepository;

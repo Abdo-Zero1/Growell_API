@@ -23,10 +23,15 @@ namespace Growell_API.DTOs
         [Required(ErrorMessage = "Address Is Required")]
         [StringLength(100, ErrorMessage = "Address Must Not Exceed 100 Characters")]
         public string Address { get; set; }
+        [Required(ErrorMessage = "Phone number is required.")]
+        [RegularExpression(@"^(\+20\d{10}|01\d{9}|\+?[1-9]\d{1,14})$", ErrorMessage = "Invalid phone number format. Must be an Egyptian or international number.")]
 
-        [Required(ErrorMessage = "Password Is Required")]
-        [DataType(DataType.Password, ErrorMessage = "Invalid Password Format")]
-        [StringLength(50, MinimumLength = 8, ErrorMessage = "Password must be between 8 and 50 Characters")]
+        public string PhoneNumber { get; set; }
+
+        [Required(ErrorMessage = "New password is required.")]
+        [MinLength(8, ErrorMessage = "New password must be at least 8 characters long.")]
+        [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$",
+        ErrorMessage = "New password must have at least one uppercase letter, one lowercase letter, one digit, and one special character.")]
         public string Password { get; set; }
 
         [Required]
