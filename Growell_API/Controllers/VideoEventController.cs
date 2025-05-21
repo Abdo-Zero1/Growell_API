@@ -3,6 +3,7 @@ using DataAccess.Repository.IRepository;
 using Growell_API.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models;
@@ -12,7 +13,7 @@ namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = $"{SD.DoctorRole}")]
+    //[Authorize(Roles = $"{SD.DoctorRole}")]
     public class VideoEventController : ControllerBase
     {
         private readonly IVideoEventRepository videoEventRepository;
@@ -27,6 +28,8 @@ namespace Growell_API.Controllers
             var video = videoEventRepository.Get().ToList();
             return Ok(video);
         }
+
+
         [HttpPost("CreateVideoEvent")]
         public IActionResult CreateVideoEvent([FromForm] VideoDTO videoDTO)
         {
@@ -127,23 +130,27 @@ namespace Growell_API.Controllers
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {
-            var bookEvent = videoEventRepository.GetOne(expression: e => e.VideoEventId == id);
-            if (bookEvent == null)
+            var videoEvent = videoEventRepository.GetOne(expression: e => e.VideoEventId == id);
+            if (videoEvent == null)
             {
                 return NotFound("BookEvent not found.");
             }
 
-            if (!string.IsNullOrEmpty(bookEvent.VideoImagePath))
+            if (!string.IsNullOrEmpty(videoEvent.VideoImagePath))
             {
-                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "images", "videos", bookEvent.VideoImagePath);
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "images", "videos", videoEvent.VideoImagePath);
                 if (System.IO.File.Exists(filePath))
                 {
                     System.IO.File.Delete(filePath);
                 }
+
+
+                videoEventRepository.Delete(videoEvent);
+                videoEventRepository.Commit();
+                return Ok("The deleted was success");
             }
 
-            videoEventRepository.Delete(bookEvent);
-            videoEventRepository.Commit();
+        
 
             return NoContent();
         }

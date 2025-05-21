@@ -1,9 +1,11 @@
-﻿using DataAccess.Repository.IRepository;
+﻿using DataAccess.Repository;
+using DataAccess.Repository.IRepository;
 using Growell_API.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Models;
 using Utility;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -30,31 +32,44 @@ namespace Growell_API.Controllers
 
         [HttpPost]
         [Route("CreateBookEvent")]
-        public IActionResult Create(BookDTO bookDTO)
+        public IActionResult Create([FromForm]BookDTO bookDTO)
         {
-            if(ModelState.IsValid)
-            {
-                if(bookDTO.ImgUrl != null && bookDTO.ImgUrl.Length>0)
-                {
-                    var fileName = Guid.NewGuid().ToString()+Path.GetExtension(bookDTO.ImgUrl.FileName);
-                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "images", fileName);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-                    using (var stream = System.IO.File.Create(filePath))
-                    {
-                        bookDTO.ImgUrl.CopyTo(stream);
-                    }
-                    bookDTO.BookEvent.BookImagePath = fileName;
-                }
-                bookEventRepository.Create(bookDTO.BookEvent);
-                bookEventRepository.Commit();
-                return Ok(bookDTO.BookEvent);
+            if(bookDTO.BookImage==null||bookDTO.BookImage.Length==0)
+                return BadRequest("Book data and image are required.");
+
+            string fileName = Guid.NewGuid().ToString() + Path.GetExtension(bookDTO.BookImage.FileName);
+            string FolderPath=Path.Combine(Directory.GetCurrentDirectory(), "images", "Books");
+            Directory.CreateDirectory(FolderPath);
+            string filePath= Path.Combine(FolderPath, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                bookDTO.BookImage.CopyTo(stream);
             }
-            return BadRequest("There was an error with the provided data");
+
+
+            var Book = new BookEvent
+            {
+                BookTitle = bookDTO.BookTitle,
+                Description = bookDTO.Description,
+                BookUrl = bookDTO.BookUrl,
+                BookImagePath = $"/images/Books/{fileName}"
+            };
+
+
+            bookEventRepository.Create(Book);
+            bookEventRepository.Commit();
+
+            return Ok(Book);
         }
+
         [HttpGet("{id}")]
-        public IActionResult Get(int Id)
+        public IActionResult Get(int id)
         {
-            var bookEvent = bookEventRepository.GetOne(expression: e=>e.BookEventId == Id);
+            var bookEvent = bookEventRepository.GetOne(expression: e=>e.BookEventId == id);
             if (bookEvent == null)
             {
                 return NotFound("BookEvent not found");
@@ -62,46 +77,12 @@ namespace Growell_API.Controllers
             return Ok(bookEvent);
 
         }
-        [HttpPut("{id}")]
-        public IActionResult Put(int Id, [FromBody] BookDTO bookDTO)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            var existingBook = bookEventRepository.GetOne(expression:e=>e.BookEventId == Id);
-            if (existingBook == null)
-            {
-                return NotFound("BookEvent not found");
-            }
-            existingBook.BookTitle = bookDTO.BookEvent.BookTitle;
-            existingBook.TestResult = bookDTO.BookEvent.TestResult;
-            existingBook.DevelopmentStatusID = bookDTO.BookEvent.DevelopmentStatusID;
-
-            if (bookDTO.ImgUrl != null && bookDTO.ImgUrl.Length > 0)
-            {
-                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(bookDTO.ImgUrl.FileName);
-                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "images", fileName);
-
-                using (var stream = System.IO.File.Create(filePath))
-                {
-                    bookDTO.ImgUrl.CopyTo(stream);
-                }
-
-                existingBook.BookImagePath = fileName;
-            }
-
-            bookEventRepository.Edit(existingBook);
-            bookEventRepository.Commit();
-
-            return Ok(existingBook); 
-        }
+   
 
         [HttpDelete("{id}")]
-        public IActionResult Delete(int Id)
+        public IActionResult Delete(int id)
         {
-            var bookEvent = bookEventRepository.GetOne(expression: e=>e.BookEventId== Id);
+            var bookEvent = bookEventRepository.GetOne(expression: e=>e.BookEventId== id);
             if (bookEvent == null)
             {
                 return NotFound("BookEvent not found.");
@@ -114,10 +95,13 @@ namespace Growell_API.Controllers
                 {
                     System.IO.File.Delete(filePath); 
                 }
+
+                bookEventRepository.Delete(bookEvent);
+                bookEventRepository.Commit();
+                return Ok("success deleted");
             }
 
-            bookEventRepository.Delete(bookEvent);
-            bookEventRepository.Commit();
+           
 
             return NoContent(); 
         }
