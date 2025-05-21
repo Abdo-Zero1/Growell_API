@@ -3,19 +3,16 @@ using DataAccess.Repository.IRepository;
 using Growell_API.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Models;
-using System.Security.Claims;
-using Utility;
-
+using System.IO;
+using System;
+using System.Linq;
 
 namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-
     public class DoctorController : ControllerBase
     {
         private readonly IDoctorRepository doctorRepository;
@@ -24,8 +21,8 @@ namespace Growell_API.Controllers
         {
             this.doctorRepository = doctorRepository;
         }
-        [Authorize(Roles = $"{SD.AdminRole}")]
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("Get")]
         public IActionResult Index(int page = 1, int pageSize = 10)
         {
@@ -49,16 +46,14 @@ namespace Growell_API.Controllers
             });
         }
 
-
         [HttpPost]
-        [Authorize(Roles = $"{SD.AdminRole}")]
-
+        [Authorize(Roles = "Admin")]
         public IActionResult CreateDoctor([FromForm] DoctorDTO doctorDTO)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            string imgFileName = "images/images.jpg"; 
+            string imgFileName = "images/images.jpg"; // صورة الديفولت
 
             if (doctorDTO.ImgUrl != null && doctorDTO.ImgUrl.Length > 0)
             {
@@ -100,8 +95,8 @@ namespace Growell_API.Controllers
 
             return Ok(new { message = "Doctor created successfully", doctorId = doctor.DoctorID });
         }
-        [Authorize(Roles = $"{SD.DoctorRole}")]
 
+        [Authorize(Roles = "Doctor")]
         [HttpPut("{id}")]
         public IActionResult EditDoctor(int id, [FromForm] DoctorEditDTO dto)
         {
@@ -135,8 +130,8 @@ namespace Growell_API.Controllers
 
             return Ok(new { message = "Doctor updated successfully", doctorId = existingDoctor.DoctorID });
         }
-        [Authorize(Roles = $"{SD.AdminRole}")]
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public IActionResult DeleteDoctor(int id)
         {
@@ -159,8 +154,22 @@ namespace Growell_API.Controllers
             return Ok(new { message = "Doctor deleted successfully" });
         }
 
+        [HttpGet("GetPhotoUrl")]
+        public IActionResult GetPhotoUrl(string? fileName = null)
+        {
+            var defaultImage = "images/images.jpg";
 
+            var imagePath = string.IsNullOrEmpty(fileName) ? defaultImage : Path.Combine("images/Doctor", fileName);
 
+            var fullPath = Path.Combine(Directory.GetCurrentDirectory(), imagePath);
+            if (!System.IO.File.Exists(fullPath))
+            {
+                imagePath = defaultImage;
+            }
 
+            var imageUrl = $"{Request.Scheme}://{Request.Host}/{imagePath}";
+
+            return Ok(new { url = imageUrl });
+        }
     }
 }
