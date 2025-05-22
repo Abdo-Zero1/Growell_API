@@ -1,5 +1,6 @@
 ﻿using DataAccess.Repository;
 using DataAccess.Repository.IRepository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Models;
 using System.Linq;
@@ -76,10 +77,22 @@ namespace Growell_API.Controllers
             return Ok(doctor);
         }
 
+        //[HttpGet("api/photo-url")]
+        //public IActionResult GetPhotoUrl()
+
+        //{
+
+        //    var imageUrl = $"{Request.Scheme}://{Request.Host}/images/photo.jpg";
+
+        //    return Ok(new { url = imageUrl });
+
+        //}
+        [Authorize]
+
         [HttpGet("photo/{doctorId}")]
         public IActionResult GetPhotoUrl(int doctorId)
         {
-            var doctor = doctorRepository.GetOne(expression:d=>d.DoctorID==doctorId);
+            var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == doctorId);
             if (doctor == null)
             {
                 return NotFound(new { Message = "Doctor not found" });

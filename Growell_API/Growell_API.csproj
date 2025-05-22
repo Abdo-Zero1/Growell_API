@@ -7,10 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="images\Video\**" />
-    <Content Remove="images\Video\**" />
-    <EmbeddedResource Remove="images\Video\**" />
-    <None Remove="images\Video\**" />
+    <Compile Remove="wwwroot\images\Video\**" />
+    <Content Remove="wwwroot\images\Video\**" />
+    <EmbeddedResource Remove="wwwroot\images\Video\**" />
+    <None Remove="wwwroot\images\Video\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,11 +35,39 @@
 		</PackageReference>
 	</ItemGroup>
 	<ItemGroup>
-	  <Folder Include="images\Game\" />
-	  <Folder Include="images\file\" />
-	  <Folder Include="images\Doctor\" />
-	  <Folder Include="images\Profile\" />
+	  <Folder Include="wwwroot\images\Game\" />
+	  <Folder Include="wwwroot\images\file\" />
 	  <Folder Include="Services\" />
+	</ItemGroup>
+	<ItemGroup>
+	  <None Include="wwwroot\images\Books\1059036e-7a07-4ffb-a67c-539418a15057.jpg" />
+	  <None Include="wwwroot\images\Books\1329d674-37b2-4205-9403-eedacbcc893b.jpg" />
+	  <None Include="wwwroot\images\Books\23cde935-a4ef-4bca-b5b8-38a872755f70.png" />
+	  <None Include="wwwroot\images\Books\251710ac-9676-411c-b487-686616432dbe.jpg" />
+	  <None Include="wwwroot\images\Books\31729343-b2d5-4a42-a625-08ef04350fd6.jpg" />
+	  <None Include="wwwroot\images\Books\575e17aa-d49e-4c0e-8880-2a2cb6b2f8b0.jpeg" />
+	  <None Include="wwwroot\images\Books\ecc1c435-d4da-446d-abd3-e1248b78d07f.jpg" />
+	  <None Include="wwwroot\images\Doctor\2db52a3d-225c-43a1-a9bb-d1c72be0d810.JPG" />
+	  <None Include="wwwroot\images\Doctor\3ca76bf0-7d6f-475b-b70d-f21da74b8efe.jpg" />
+	  <None Include="wwwroot\images\Doctor\4789d693-1253-4638-b019-3609f0c9b036.jpg" />
+	  <None Include="wwwroot\images\Doctor\9cf40575-ead1-4a53-be6f-cefc283c581e.JPG" />
+	  <None Include="wwwroot\images\images.jpg" />
+	  <None Include="wwwroot\images\Profile\36bf2ee2-774a-404c-86cb-9b08e061936b.jpg" />
+	  <None Include="wwwroot\images\Profile\555c5edd-6968-4171-beab-fd3130328a22.jpg" />
+	  <None Include="wwwroot\images\Profile\5a4f7ac1-041e-4b72-9049-6d00fc9de6b3.jpg" />
+	  <None Include="wwwroot\images\Profile\953f320e-6124-4f9c-b2ce-109c18c9545b.jpg" />
+	  <None Include="wwwroot\images\Profile\d7b61e50-0532-4625-acf3-fbfe0fb625d7.jpg" />
+	  <None Include="wwwroot\images\videos\05ce9979-f887-49d1-8a16-79e09e5a8cc3.jpeg" />
+	  <None Include="wwwroot\images\videos\1611a5b5-226e-4cbb-b901-4aae0fd4ff4c.jpeg" />
+	  <None Include="wwwroot\images\videos\32494704-35c0-439a-83b3-b5d440014203.jpeg" />
+	  <None Include="wwwroot\images\videos\3e756066-fe5f-496c-b593-5ed8d3ae5a7e.png" />
+	  <None Include="wwwroot\images\videos\42ad35b2-70a2-4677-8e18-d48e0bb626e2.png" />
+	  <None Include="wwwroot\images\videos\4ded29cc-7cf7-4f4f-932e-8a0911fc6439.png" />
+	  <None Include="wwwroot\images\videos\4e0e2b88-6a89-460d-bde3-6035b56c97d2.png" />
+	  <None Include="wwwroot\images\videos\69356c9f-d8b7-4586-84e8-7a7f7d364242.png" />
+	  <None Include="wwwroot\images\videos\6fc2f49f-1afb-43f8-9680-3a0d59f0d596.jpg" />
+	  <None Include="wwwroot\images\videos\8fcf4b63-cb36-43c1-a01f-ba2342f72f57.jpeg" />
+	  <None Include="wwwroot\images\videos\e0943c65-9bb9-4b91-930a-e2660c05bd0c.png" />
 	</ItemGroup>
 
 
