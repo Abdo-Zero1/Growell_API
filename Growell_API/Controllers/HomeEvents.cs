@@ -73,6 +73,7 @@ namespace Growell_API.Controllers
                     book.BookEventId,
                     book.BookTitle,
                     book.Description,
+                    book.AboutOfBook,
                     book.BookUrl,
                     BookImagePath = string.IsNullOrEmpty(book.BookImagePath)
                         ? null
@@ -95,6 +96,17 @@ namespace Growell_API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "Error.");
             }
         }
+        [HttpGet("GetbookID")]
+        public IActionResult GetId(int bookId)
+        {
+            var book = bookEventRepository.GetOne(expression: b => b.BookEventId == bookId);
+            if (book == null)
+            {
+                return NotFound(new { Message = "Book not found" });
+            }
+           
+            return Ok(book);
+        }
 
         [HttpGet("GetVidoes")]
         public IActionResult GetVidoes(int pageNum = 1, int pageSize = 10)
@@ -110,6 +122,7 @@ namespace Growell_API.Controllers
                     video.VideoEventId,
                     video.VideoTitle,
                     video.Description,
+                    video.AboutOfVideo,
                     video.VideoUrl,
                     VideoImagePath = string.IsNullOrEmpty(video.VideoImagePath)
                         ? null
@@ -132,6 +145,17 @@ namespace Growell_API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "Error.");
             }
         }
+        [HttpGet("GetVideoID")]
+        public IActionResult GetVideoId(int videoId)
+        {
+            var video = videoEventRepository.GetOne(expression: v => v.VideoEventId == videoId);
+            if (video == null)
+            {
+                return NotFound(new { Message = "Video not found" });
+            }
+            return Ok(video);
+        }
+
 
 
     }

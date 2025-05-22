@@ -99,7 +99,7 @@ namespace Growell_API.Controllers
             }
 
             var imageUrl = string.IsNullOrEmpty(doctor.ImgUrl)
-                ? $"{Request.Scheme}://{Request.Host}/images/default.jpg"
+                ? $"{Request.Scheme}://{Request.Host}/images/Photo.JPG"
                 : $"{Request.Scheme}://{Request.Host}/{doctor.ImgUrl}";
 
             return Ok(new { url = imageUrl });

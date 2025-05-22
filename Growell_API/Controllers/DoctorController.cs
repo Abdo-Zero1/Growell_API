@@ -53,7 +53,7 @@ namespace Growell_API.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            string imgFileName = "images/images.jpg"; // صورة الديفولت
+            string imgFileName = "images/Photo.JPG"; 
 
             if (doctorDTO.ImgUrl != null && doctorDTO.ImgUrl.Length > 0)
             {
@@ -139,7 +139,7 @@ namespace Growell_API.Controllers
             if (doctor == null)
                 return NotFound(new { message = "Doctor not found" });
 
-            if (!string.IsNullOrEmpty(doctor.ImgUrl) && doctor.ImgUrl != "images/images.jpg")
+            if (!string.IsNullOrEmpty(doctor.ImgUrl) && doctor.ImgUrl != "images/Photo.JPG")
             {
                 var imagePath = Path.Combine(Directory.GetCurrentDirectory(), doctor.ImgUrl);
                 if (System.IO.File.Exists(imagePath))

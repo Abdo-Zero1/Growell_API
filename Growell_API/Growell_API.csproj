@@ -7,9 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="wwwroot\images\file\**" />
+    <Compile Remove="wwwroot\images\Game\**" />
     <Compile Remove="wwwroot\images\Video\**" />
+    <Content Remove="wwwroot\images\file\**" />
+    <Content Remove="wwwroot\images\Game\**" />
     <Content Remove="wwwroot\images\Video\**" />
+    <EmbeddedResource Remove="wwwroot\images\file\**" />
+    <EmbeddedResource Remove="wwwroot\images\Game\**" />
     <EmbeddedResource Remove="wwwroot\images\Video\**" />
+    <None Remove="wwwroot\images\file\**" />
+    <None Remove="wwwroot\images\Game\**" />
     <None Remove="wwwroot\images\Video\**" />
   </ItemGroup>
 
@@ -35,8 +43,6 @@
 		</PackageReference>
 	</ItemGroup>
 	<ItemGroup>
-	  <Folder Include="wwwroot\images\Game\" />
-	  <Folder Include="wwwroot\images\file\" />
 	  <Folder Include="Services\" />
 	</ItemGroup>
 	<ItemGroup>
@@ -45,7 +51,6 @@
 	  <None Include="wwwroot\images\Books\23cde935-a4ef-4bca-b5b8-38a872755f70.png" />
 	  <None Include="wwwroot\images\Books\251710ac-9676-411c-b487-686616432dbe.jpg" />
 	  <None Include="wwwroot\images\Books\31729343-b2d5-4a42-a625-08ef04350fd6.jpg" />
-	  <None Include="wwwroot\images\Books\575e17aa-d49e-4c0e-8880-2a2cb6b2f8b0.jpeg" />
 	  <None Include="wwwroot\images\Books\ecc1c435-d4da-446d-abd3-e1248b78d07f.jpg" />
 	  <None Include="wwwroot\images\Doctor\2db52a3d-225c-43a1-a9bb-d1c72be0d810.JPG" />
 	  <None Include="wwwroot\images\Doctor\3ca76bf0-7d6f-475b-b70d-f21da74b8efe.jpg" />

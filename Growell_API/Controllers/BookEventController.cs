@@ -55,6 +55,7 @@ namespace Growell_API.Controllers
             {
                 BookTitle = bookDTO.BookTitle,
                 Description = bookDTO.Description,
+                AboutOfBook = bookDTO.AboutOfBook,
                 BookUrl = bookDTO.BookUrl,
                 BookImagePath = $"/images/Books/{fileName}"
             };
@@ -77,7 +78,73 @@ namespace Growell_API.Controllers
             return Ok(bookEvent);
 
         }
-   
+
+        [HttpPut]
+        [Route("EditBookEvent/{id}")]
+        public IActionResult Edit(int id, [FromForm] BookDTO bookDTO)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var existingBook = bookEventRepository.GetOne(expression: b => b.BookEventId == id);
+            if (existingBook == null)
+                return NotFound("The book with the specified ID does not exist.");
+
+            if (!string.IsNullOrWhiteSpace(bookDTO.BookTitle))
+                existingBook.BookTitle = bookDTO.BookTitle;
+
+            if (bookDTO.Description != null)
+                existingBook.Description = bookDTO.Description;
+
+            if (bookDTO.AboutOfBook != null)
+                existingBook.AboutOfBook = bookDTO.AboutOfBook;
+
+            if (!string.IsNullOrWhiteSpace(bookDTO.BookUrl))
+                existingBook.BookUrl = bookDTO.BookUrl;
+
+            if (bookDTO.BookImage != null && bookDTO.BookImage.Length > 0)
+            {
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+                if (!allowedExtensions.Contains(Path.GetExtension(bookDTO.BookImage.FileName).ToLower()))
+                    return BadRequest("Only JPG and PNG image files are allowed.");
+
+                string fileName = Guid.NewGuid().ToString() + Path.GetExtension(bookDTO.BookImage.FileName);
+                string folderName = Path.Combine("wwwroot", "images", "Books");
+                string filePath = Path.Combine(Directory.GetCurrentDirectory(), folderName, fileName);
+
+                Directory.CreateDirectory(folderName);
+
+                try
+                {
+                    if (!string.IsNullOrEmpty(existingBook.BookImagePath))
+                    {
+                        string oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", existingBook.BookImagePath.TrimStart('/'));
+                        if (System.IO.File.Exists(oldFilePath))
+                        {
+                            System.IO.File.Delete(oldFilePath);
+                        }
+                    }
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        bookDTO.BookImage.CopyTo(stream);
+                    }
+
+                    existingBook.BookImagePath = $"/images/Books/{fileName}";
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, $"Internal server error: {ex.Message}");
+                }
+            }
+
+            bookEventRepository.Edit(existingBook);
+            bookEventRepository.Commit();
+
+            return Ok(existingBook);
+        }
+
+
+
 
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)

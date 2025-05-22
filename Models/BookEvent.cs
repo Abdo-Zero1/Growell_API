@@ -16,6 +16,8 @@ namespace Models
         [Required]
         [Url]
         public string BookUrl { get; set; }
+        [Required]
+        public string AboutOfBook {get; set;}
 
         public string? BookImagePath { get; set; }
 

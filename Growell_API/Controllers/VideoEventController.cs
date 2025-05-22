@@ -56,6 +56,7 @@ namespace Growell_API.Controllers
             {
                 VideoTitle = videoDTO.VideoTitle,
                 Description = videoDTO.Description,
+                AboutOfVideo = videoDTO.AboutOfVideo,
                 VideoUrl = videoDTO.VideoUrl,
                 VideoImagePath = $"/images/videos/{fileName}"
             };
