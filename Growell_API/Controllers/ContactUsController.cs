@@ -51,17 +51,29 @@ namespace Growell_API.Controllers
 
         [HttpGet]
         [Authorize(Roles = $"{SD.DoctorRole},{SD.AdminRole}")]
-
         public IActionResult GetComplaints()
         {
             var contacts = contactUsRepository.Get(
                 new Expression<Func<ContactUs, object>>[] { c => c.User },
                 null,
                 true
-            );
+            ).Select(c => new
+            {
+                id= c.Id,
+                UserName = c.User?.UserName, 
+                Email = c.User?.Email,
+                Title= c.Title,
+                description= c.Description,
+                isResolved = c.IsResolved,
+                isViewed = c.IsViewed,
+                date = c.CreatedAt
+               
+            }).ToList();
+            
 
             return Ok(contacts);
         }
+
 
         [HttpPut("{id}")]
         [Authorize(Roles = $"{SD.DoctorRole},{SD.AdminRole}")]
@@ -91,7 +103,7 @@ namespace Growell_API.Controllers
             {
                 return Forbid("Only admins can update complaint status.");
                 
-                return Forbid("Only admins can update complaint status.");
+                //return Forbid("Only admins can update complaint status.");
             }
 
             complaint.IsResolved = updatedContact.IsResolved;

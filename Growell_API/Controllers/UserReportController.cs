@@ -1,6 +1,7 @@
 ﻿using DataAccess.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Models;
 using System.Linq;
@@ -18,17 +19,23 @@ namespace Growell_API.Controllers
         private readonly ICategoryRepository CategoryRepository;
         private readonly IDoctorRepository doctorRepository;
         private readonly IQuestionRepository questionRepository;
+        private readonly ITestRepository testRepository;
+        private readonly UserManager<ApplicationUser> userManager;
 
         public UserReportController(
             ITestResultRepository testResultRepository,
             ICategoryRepository CategoryRepository,
             IDoctorRepository doctorRepository,
-            IQuestionRepository questionRepository)
+            IQuestionRepository questionRepository,
+            ITestRepository testRepository,
+            UserManager<ApplicationUser> userManager)
         {
             this.testResultRepository = testResultRepository;
             this.CategoryRepository = CategoryRepository;
             this.doctorRepository = doctorRepository;
             this.questionRepository = questionRepository;
+            this.testRepository = testRepository;
+            this.userManager = userManager;
         }
 
         [HttpGet("GetReport")]
@@ -52,7 +59,7 @@ namespace Growell_API.Controllers
                 if (doctor == null)
                     return BadRequest(new { message = "Doctor not found for this user." });
 
-                testResults = testResultRepository.Get( expression: r=> r.DoctorID == doctor.DoctorID).ToList();
+                testResults = testResultRepository.Get(expression: r => r.DoctorID == doctor.DoctorID).ToList();
             }
             else
             {
@@ -66,24 +73,34 @@ namespace Growell_API.Controllers
                     messageAr = "لا توجد نتائج اختبارات لهذا المستخدم."
                 });
 
+            var userIds = testResults.Select(r => r.UserID).Distinct().ToList();
+            var users = userManager.Users.Where(u => userIds.Contains(u.Id))
+                                         .Select(u => new { u.Id, u.UserName })
+                                         .ToList();
+
             var report = testResults.Select(r =>
             {
-                var category = CategoryRepository.GetOne(expression: c => c.CategoryID == r.CategoryID);
-                var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == r.DoctorID);
-
+                var test = testRepository.GetOne(expression: t => t.TestID == r.TestID);
+                var category = CategoryRepository.GetOne(expression: c => c.CategoryID == test.CategoryID);
+                var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == test.DoctorID);
                 var totalQuestions = questionRepository.Get(expression: q => q.TestID == r.TestID).Count();
+                double percentage = totalQuestions > 0 ? (double)r.Score / totalQuestions * 100 : 0;
 
-                double percentage = 0;
-                if (totalQuestions > 0)
-                    percentage = (double)r.Score / totalQuestions * 100;
-
+                var userName = users.FirstOrDefault(u => u.Id == r.UserID)?.UserName ?? "Unknown User";
+                var doctorName = doctor != null
+                    ? $"{doctor.FirstName ?? "غير متوفر"} {doctor.SecondName ?? ""} {doctor.LastName ?? ""}".Trim()
+                    : "Doctor not found";
+               
                 return new
                 {
-                    TestID = r.TestID,
+                    //userId = r.UserID,
+                    userName = userName,
+                    TestName = test?.TestName ,
+                   // TestID = r.TestID,
                     Score = r.Score,
                     TakenAt = r.TakenAt,
                     CategoryName = category?.Name,
-                    DoctorName = doctor?.FirstName,
+                    DoctorName = doctorName,
                     Percentage = percentage,
                     ClassificationEn = GetDelayClassificationEn(percentage),
                     ClassificationAr = GetDelayClassificationAr(percentage)

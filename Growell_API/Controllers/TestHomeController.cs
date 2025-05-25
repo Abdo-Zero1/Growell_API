@@ -80,6 +80,16 @@ namespace Growell_API.Controllers
                 return Unauthorized(new { message = "User not authenticated" });
             }
 
+            var existingResult = testResultRepository.Get(
+                expression: tr => tr.UserID == userId && tr.TestID == testId,
+                tracked: false
+            ).FirstOrDefault();
+
+            if (existingResult != null)
+            {
+                return BadRequest(new { Message = "You have already submitted this test." });
+            }
+
             var tests = testRepository.Get(
                 new Expression<Func<Test, object>>[] { t => t.Questions },
                 t => t.TestID == testId,
@@ -104,7 +114,6 @@ namespace Growell_API.Controllers
 
             for (int i = 0; i < questions.Count; i++)
             {
-                // Compare the provided answer with the correct answer, ignoring case and trimming spaces
                 if (string.Equals(questions[i].CorrectAnswer?.Trim(), userAnswers[i]?.Trim(), StringComparison.OrdinalIgnoreCase))
                 {
                     score++;
@@ -121,7 +130,7 @@ namespace Growell_API.Controllers
             });
         }
 
-        private void SaveResult(string userId, int testId, int score)
+        private void SaveResult(string userId, int testId, int score )
         {
             var result = new TestResult
             {

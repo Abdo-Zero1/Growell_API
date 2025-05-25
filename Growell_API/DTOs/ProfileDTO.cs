@@ -14,6 +14,8 @@ namespace Growell_API.DTOs
         [Phone(ErrorMessage = "Invalid phone number.")]
         [RegularExpression(@"^\+?(\d{7,15})$", ErrorMessage = "Phone number must be between 7 and 15 digits and can start with +")]
         public string? PhoneNumber { get; set; }
+        public string? Adderss { get; set; }
+
 
         public IFormFile? ProfilePicture { get; set; }
 

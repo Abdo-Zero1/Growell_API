@@ -14,7 +14,7 @@ namespace Models
         public int Score { get; set; }
         public DateTime TakenAt { get; set; } = DateTime.Now;
         public string UserID { get; set; }
-        public int CategoryID { get; set; } // يجب أن يكون موجودًا
+        public int CategoryID { get; set; } 
 
         public int? DoctorID { get; set; }
         [JsonIgnore]

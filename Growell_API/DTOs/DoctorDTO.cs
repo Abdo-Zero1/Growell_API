@@ -19,7 +19,8 @@ namespace Growell_API.DTOs
         public int Age { get; set; }
         public IFormFile? ImgUrl { get; set; }
         public string? AboutOfKids { get; set; }
-        public string TargetAgeGroup { get; set; } 
+        public string? TargetAgeGroup { get; set; }
+        public string? UserID { get; set; } = null!;
 
 
         //public ICollection<AppointmentDTO> appointmentDTOs { get; set; }

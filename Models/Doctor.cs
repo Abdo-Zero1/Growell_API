@@ -30,7 +30,7 @@ namespace Models
 
         public ICollection<Test> Tests { get; set; }
         public ICollection<TestResult> TestResults { get; set; }
-        public string UserID { get; set; }
+        public string? UserID { get; set; }
 
         
 

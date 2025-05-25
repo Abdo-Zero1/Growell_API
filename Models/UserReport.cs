@@ -8,7 +8,7 @@ namespace Models
 {
    public class UserReport
     {
-        public int Id { get; set; } // المفتاح الأساسي
+        public int Id { get; set; } 
         public string UserID { get; set; }  
         public int TotalScore { get; set; }  
         public int MaxScore { get; set; }   
@@ -18,7 +18,7 @@ namespace Models
     }
     public class TestResultDetails
     {
-        public int Id { get; set; } // المفتاح الأساسي
+        public int Id { get; set; } 
         public int TestID { get; set; } 
         public int Score { get; set; } 
         public DateTime TakenAt { get; set; } 

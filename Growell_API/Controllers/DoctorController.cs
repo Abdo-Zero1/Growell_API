@@ -16,10 +16,14 @@ namespace Growell_API.Controllers
     public class DoctorController : ControllerBase
     {
         private readonly IDoctorRepository doctorRepository;
+        private readonly ITestRepository testRepository;
+        private readonly ITestResultRepository testResultRepository;
 
-        public DoctorController(IDoctorRepository doctorRepository)
+        public DoctorController(IDoctorRepository doctorRepository,ITestRepository testRepository, ITestResultRepository testResultRepository)
         {
             this.doctorRepository = doctorRepository;
+            this.testRepository = testRepository;
+            this.testResultRepository = testResultRepository;
         }
 
         [Authorize(Roles = "Admin")]
@@ -47,32 +51,35 @@ namespace Growell_API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin")]
+        // [Authorize(Roles = "Admin")]
         public IActionResult CreateDoctor([FromForm] DoctorDTO doctorDTO)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            string imgFileName = "images/Photo.JPG"; 
+            string imgFileName = "/wwwroot/images/Photo.JPG"; 
 
             if (doctorDTO.ImgUrl != null && doctorDTO.ImgUrl.Length > 0)
             {
-                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "images", "Doctor");
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "Doctor");
 
                 if (!Directory.Exists(uploadsFolder))
                     Directory.CreateDirectory(uploadsFolder);
 
-                imgFileName = Path.Combine("images", "Doctor", Guid.NewGuid().ToString() + Path.GetExtension(doctorDTO.ImgUrl.FileName));
-                var filePath = Path.Combine(Directory.GetCurrentDirectory(), imgFileName);
+                var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(doctorDTO.ImgUrl.FileName);
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     doctorDTO.ImgUrl.CopyTo(stream);
                 }
+
+                imgFileName = $"/images/Doctor/{uniqueFileName}";
             }
 
             var doctor = new Doctor
             {
+                UserID = doctorDTO.UserID,
                 FirstName = doctorDTO.FirstName,
                 SecondName = doctorDTO.SecondName,
                 LastName = doctorDTO.LastName,
@@ -86,7 +93,9 @@ namespace Growell_API.Controllers
                 YearsOfExperience = doctorDTO.YearsOfExperience,
                 Education = doctorDTO.Education,
                 Age = doctorDTO.Age,
-                ImgUrl = imgFileName,
+                ImgUrl = imgFileName, 
+                AboutOfKids = doctorDTO.AboutOfKids,
+                TargetAgeGroup = doctorDTO.TargetAgeGroup,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -96,6 +105,7 @@ namespace Growell_API.Controllers
             return Ok(new { message = "Doctor created successfully", doctorId = doctor.DoctorID });
         }
 
+
         [Authorize(Roles = "Doctor")]
         [HttpPut("{id}")]
         public IActionResult EditDoctor(int id, [FromForm] DoctorEditDTO dto)
@@ -104,12 +114,23 @@ namespace Growell_API.Controllers
             if (existingDoctor == null)
                 return NotFound(new { message = "Doctor not found" });
 
-            existingDoctor.FirstName = dto.FirstName;
-            existingDoctor.PhoneNumber = dto.PhoneNumber;
+            if(!string.IsNullOrEmpty(dto.FirstName)) existingDoctor.FirstName = dto.FirstName;
+            if(!string.IsNullOrEmpty(dto.SecondName)) existingDoctor.SecondName = dto.SecondName;
+            if (!string.IsNullOrEmpty(dto.LatestName)) existingDoctor.LastName = dto.LatestName;
+            if (!string.IsNullOrEmpty(dto.Description)) existingDoctor.Description = dto.Description;
+            if (!string.IsNullOrEmpty(dto.Education)) existingDoctor.Education = dto.Education;
+            if (dto.Age.HasValue) existingDoctor.Age = dto.Age.Value;
+            if (!string.IsNullOrEmpty(dto.Specialization)) existingDoctor.Specialization = dto.Specialization;
+            if (dto.YearsOfExperience.HasValue) existingDoctor.YearsOfExperience = dto.YearsOfExperience.Value;
+            if (!string.IsNullOrEmpty(dto.AboutMe)) existingDoctor.AboutMe = dto.AboutMe;
+            if (!string.IsNullOrEmpty(dto.AboutOfKids)) existingDoctor.AboutOfKids = dto.AboutOfKids;
+            if (!string.IsNullOrEmpty(dto.TargetAgeGroup)) existingDoctor.TargetAgeGroup = dto.TargetAgeGroup;
+            if (!string.IsNullOrEmpty(dto.Bio)) existingDoctor.Bio = dto.Bio;
+            if (!string.IsNullOrEmpty(dto.PhoneNumber)) existingDoctor.PhoneNumber = dto.PhoneNumber;
 
             if (dto.ImgUrl != null && dto.ImgUrl.Length > 0)
             {
-                var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "images", "Doctor");
+                var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "Doctor");
 
                 if (!Directory.Exists(folderPath))
                     Directory.CreateDirectory(folderPath);
@@ -122,7 +143,16 @@ namespace Growell_API.Controllers
                     dto.ImgUrl.CopyTo(stream);
                 }
 
-                existingDoctor.ImgUrl = Path.Combine("images", "Doctor", newFileName);
+                if (!string.IsNullOrEmpty(existingDoctor.ImgUrl))
+                {
+                    var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", existingDoctor.ImgUrl.TrimStart('/'));
+                    if (System.IO.File.Exists(oldFilePath))
+                    {
+                        System.IO.File.Delete(oldFilePath);
+                    }
+                }
+
+                existingDoctor.ImgUrl = $"/images/Doctor/{newFileName}";
             }
 
             doctorRepository.Edit(existingDoctor);
@@ -130,6 +160,7 @@ namespace Growell_API.Controllers
 
             return Ok(new { message = "Doctor updated successfully", doctorId = existingDoctor.DoctorID });
         }
+
 
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
@@ -139,35 +170,58 @@ namespace Growell_API.Controllers
             if (doctor == null)
                 return NotFound(new { message = "Doctor not found" });
 
-            if (!string.IsNullOrEmpty(doctor.ImgUrl) && doctor.ImgUrl != "images/Photo.JPG")
+            if (!string.IsNullOrEmpty(doctor.ImgUrl) && doctor.ImgUrl != "wwwroot/images/Photo.JPG")
             {
-                var imagePath = Path.Combine(Directory.GetCurrentDirectory(), doctor.ImgUrl);
-                if (System.IO.File.Exists(imagePath))
+                try
                 {
-                    System.IO.File.Delete(imagePath);
+                    var imagePath = Path.Combine(Directory.GetCurrentDirectory(), doctor.ImgUrl);
+                    if (System.IO.File.Exists(imagePath))
+                    {
+                        System.IO.File.Delete(imagePath);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return BadRequest(new { message = "Error deleting image", error = ex.Message });
+                }
+            }
+
+            if (doctor.Tests != null && doctor.Tests.Any())
+            {
+                foreach (var test in doctor.Tests.ToList())
+                {
+                    testRepository.Delete(test);
+                }
+            }
+
+            if (doctor.TestResults != null && doctor.TestResults.Any())
+            {
+                foreach (var testResult in doctor.TestResults.ToList())
+                {
+                    testResultRepository.Delete(testResult);
                 }
             }
 
             doctorRepository.Delete(doctor);
             doctorRepository.Commit();
 
-            return Ok(new { message = "Doctor deleted successfully" });
+            return Ok(new { message = "Doctor and related data deleted successfully" });
         }
 
+        [Authorize]
         [HttpGet("GetPhotoUrl")]
-        public IActionResult GetPhotoUrl(string? fileName = null)
+        public IActionResult GetPhotoUrl(int id)
         {
-            var defaultImage = "images/images.jpg";
-
-            var imagePath = string.IsNullOrEmpty(fileName) ? defaultImage : Path.Combine("images/Doctor", fileName);
-
-            var fullPath = Path.Combine(Directory.GetCurrentDirectory(), imagePath);
-            if (!System.IO.File.Exists(fullPath))
+            var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == id);
+            if (doctor == null)
             {
-                imagePath = defaultImage;
+                return NotFound(new { message = "Doctor not found" });
             }
 
-            var imageUrl = $"{Request.Scheme}://{Request.Host}/{imagePath}";
+
+            var imageUrl = string.IsNullOrEmpty(doctor.ImgUrl)
+             ? $"{Request.Scheme}://{Request.Host}/wwwroot/images/Photo.JPG"
+                : $"{Request.Scheme}://{Request.Host}/{doctor.ImgUrl}";
 
             return Ok(new { url = imageUrl });
         }

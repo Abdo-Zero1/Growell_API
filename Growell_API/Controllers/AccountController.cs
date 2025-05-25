@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
+using DataAccess.Repository.IRepository;
 using Growell_API.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Models;
 using System.IdentityModel.Tokens.Jwt;
@@ -23,16 +25,18 @@ namespace Growell_API.Controllers
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly IMapper mapper;
         private readonly IConfiguration configuration;
+        private readonly ITestResultRepository testResultRepository;
 
         public AccountController(UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            RoleManager<IdentityRole> roleManager, IMapper mapper, IConfiguration configuration)
+            RoleManager<IdentityRole> roleManager, IMapper mapper, IConfiguration configuration, ITestResultRepository testResultRepository)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
             this.roleManager = roleManager;
             this.mapper = mapper;
             this.configuration = configuration;
+            this.testResultRepository = testResultRepository;
         }
 
         [HttpPost("Register")]
@@ -52,7 +56,7 @@ namespace Growell_API.Controllers
 
             if (userDTO.ProfilePicturePath == null)
             {
-                user.ProfilePicturePath = "/images/images.jpg"; 
+                user.ProfilePicturePath = "/wwwroot/images/images.jpg"; 
             }
             else
             {
@@ -66,7 +70,7 @@ namespace Growell_API.Controllers
                     return BadRequest("File size exceeds 2MB.");
 
                 var fileName = $"{Guid.NewGuid()}{extension}";
-                var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "images");
+                var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "Profile");
                 Directory.CreateDirectory(folderPath);
                 var filePath = Path.Combine(folderPath, fileName);
 
@@ -193,7 +197,8 @@ namespace Growell_API.Controllers
                 user.UserName,
                 user.Email,
                 user.PhoneNumber,
-                ProfilePicturePath = user.ProfilePicturePath ?? "/images/default-profile.png"
+                user.Adderss,
+                ProfilePicturePath = user.ProfilePicturePath 
             };
 
             return Ok(userData);
@@ -226,10 +231,23 @@ namespace Growell_API.Controllers
                 user.PhoneNumber = profileDTO.PhoneNumber;
             }
 
+            if (!string.IsNullOrEmpty(profileDTO.Adderss))
+            {
+                user.Adderss = profileDTO.Adderss;
+            }
             if (profileDTO.ProfilePicture != null && profileDTO.ProfilePicture.Length > 0)
             {
                 try
                 {
+                    if (!string.IsNullOrEmpty(user.ProfilePicturePath))
+                    {
+                        var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", user.ProfilePicturePath.TrimStart('/'));
+                        if (System.IO.File.Exists(oldFilePath))
+                        {
+                            System.IO.File.Delete(oldFilePath);
+                        }
+                    }
+
                     user.ProfilePicturePath = await SaveProfilePicture(profileDTO.ProfilePicture);
                 }
                 catch (Exception ex)
@@ -237,6 +255,7 @@ namespace Growell_API.Controllers
                     return BadRequest(new { error = "Image Upload Error", message = ex.Message });
                 }
             }
+
 
             var result = await userManager.UpdateAsync(user);
 
@@ -250,6 +269,7 @@ namespace Growell_API.Controllers
                         user.UserName,
                         user.Email,
                         user.PhoneNumber,
+                        user.Adderss,
                         user.ProfilePicturePath
                     }
                 });
@@ -274,7 +294,7 @@ namespace Growell_API.Controllers
                 throw new Exception("File size exceeds 5MB.");
 
             var fileName = $"{Guid.NewGuid()}{extension}";
-            var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Images", "Profile");
+            var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "Profile");
 
             Directory.CreateDirectory(folderPath);
 
@@ -300,13 +320,24 @@ namespace Growell_API.Controllers
             if (user == null)
                 return NotFound("User not found");
 
+            if (user.TestResults != null && user.TestResults.Any())
+            {
+                foreach (var testResult in user.TestResults.ToList())
+                {
+                    testResultRepository.Delete (testResult); 
+                }
+
+                testResultRepository.Commit(); 
+            }
+
             var result = await userManager.DeleteAsync(user);
             if (result.Succeeded)
             {
-                return Ok(new { message = "Account deleted successfully" });
+                return Ok(new { message = "Account and related data deleted successfully" });
             }
 
             return BadRequest("Failed to delete account");
         }
+
     }
 }
