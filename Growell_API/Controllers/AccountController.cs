@@ -2,14 +2,13 @@
 using DataAccess.Repository.IRepository;
 using Growell_API.DTOs;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Models;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using Utility;
@@ -26,10 +25,11 @@ namespace Growell_API.Controllers
         private readonly IMapper mapper;
         private readonly IConfiguration configuration;
         private readonly ITestResultRepository testResultRepository;
+        private readonly ILogger<AccountController> logger;
 
         public AccountController(UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            RoleManager<IdentityRole> roleManager, IMapper mapper, IConfiguration configuration, ITestResultRepository testResultRepository)
+            RoleManager<IdentityRole> roleManager, IMapper mapper, IConfiguration configuration, ITestResultRepository testResultRepository, ILogger<AccountController> logger)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
@@ -37,6 +37,7 @@ namespace Growell_API.Controllers
             this.mapper = mapper;
             this.configuration = configuration;
             this.testResultRepository = testResultRepository;
+            this.logger = logger;
         }
 
         [HttpPost("Register")]
@@ -56,7 +57,7 @@ namespace Growell_API.Controllers
 
             if (userDTO.ProfilePicturePath == null)
             {
-                user.ProfilePicturePath = "/wwwroot/images/images.jpg"; 
+                user.ProfilePicturePath = "/images/images.jpg"; 
             }
             else
             {
@@ -79,7 +80,7 @@ namespace Growell_API.Controllers
                     await userDTO.ProfilePicturePath.CopyToAsync(stream);
                 }
 
-                user.ProfilePicturePath = $"/images/{fileName}";
+                user.ProfilePicturePath = $"/images/Profile/{fileName}";
             }
 
             var result = await userManager.CreateAsync(user, userDTO.Password);
@@ -206,6 +207,7 @@ namespace Growell_API.Controllers
 
 
         [HttpPost("Profile/Update")]
+        [Authorize]
         public async Task<IActionResult> UpdateProfile([FromForm] ProfileDTO profileDTO)
         {
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -310,34 +312,70 @@ namespace Growell_API.Controllers
 
 
         [HttpDelete("DeleteAccount")]
+        [Authorize(Roles = $"{SD.AdminRole},{SD.DoctorRole},{SD.UserRole}")]
+
         public async Task<IActionResult> DeleteAccount()
         {
-            var userId = User.FindFirst("sub")?.Value;
-            if (userId == null)
-                return Unauthorized("User not authorized");
-
-            var user = await userManager.FindByIdAsync(userId);
-            if (user == null)
-                return NotFound("User not found");
-
-            if (user.TestResults != null && user.TestResults.Any())
+            try
             {
-                foreach (var testResult in user.TestResults.ToList())
+                var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier) ?? User?.FindFirst("sub");
+                var userId = userIdClaim?.Value;
+
+                if (string.IsNullOrEmpty(userId))
                 {
-                    testResultRepository.Delete (testResult); 
+                    return Unauthorized(new ProblemDetails
+                    {
+                        Title = "Unauthorized",
+                        Status = StatusCodes.Status401Unauthorized,
+                        Detail = "User ID not found in the token."
+                    });
                 }
 
-                testResultRepository.Commit(); 
-            }
+                var user = await userManager.Users.Include(u => u.TestResults).FirstOrDefaultAsync(u => u.Id == userId);
+                if (user == null)
+                {
+                    return NotFound(new ProblemDetails
+                    {
+                        Title = "Not Found",
+                        Detail = "User not found."
+                    });
+                }
 
-            var result = await userManager.DeleteAsync(user);
-            if (result.Succeeded)
+                if (user.TestResults?.Any() == true)
+                {
+                    foreach (var testResult in user.TestResults)
+                    {
+                        testResultRepository.Delete(testResult);
+                    }
+                    testResultRepository.Commit();
+                }
+
+                var result = await userManager.DeleteAsync(user);
+                if (result.Succeeded)
+                {
+                    logger.LogInformation("User {UserId} was successfully deleted.", userId);
+                    return Ok(new { message = "Account and related data were successfully deleted." });
+                }
+
+                logger.LogWarning("Failed to delete user {UserId}.", userId);
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Deletion Failed",
+                    Detail = "Failed to delete the account."
+                });
+            }
+            catch (Exception ex)
             {
-                return Ok(new { message = "Account and related data deleted successfully" });
+                logger.LogError(ex, "An error occurred while deleting the account for user {UserId}.", User.FindFirst("sub")?.Value);
+                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+                {
+                    Title = "Server Error",
+                    Detail = "An error occurred while processing the request."
+                });
             }
 
-            return BadRequest("Failed to delete account");
         }
+
 
     }
 }

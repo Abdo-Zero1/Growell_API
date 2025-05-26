@@ -63,6 +63,8 @@ namespace Growell_API.Controllers
                 UserName = c.User?.UserName, 
                 Email = c.User?.Email,
                 Title= c.Title,
+                phone = c.User.PhoneNumber,
+                Address = c.User.Adderss,
                 description= c.Description,
                 isResolved = c.IsResolved,
                 isViewed = c.IsViewed,
