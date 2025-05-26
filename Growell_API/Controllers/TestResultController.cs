@@ -56,7 +56,9 @@ namespace Growell_API.Controllers
                     TakenAt = tr.TakenAt,
                     UserName = user?.UserName ,
                     DoctorName = doctorName ,
-                    CategoryName = category?.Name
+                    CategoryName = category?.Name,
+                    Image = user?.ProfilePicturePath ,
+
                 };
             }).ToList();
 

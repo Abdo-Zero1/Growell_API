@@ -87,18 +87,19 @@ namespace Growell_API.Controllers
                 double percentage = totalQuestions > 0 ? (double)r.Score / totalQuestions * 100 : 0;
 
                 var userName = users.FirstOrDefault(u => u.Id == r.UserID)?.UserName ?? "Unknown User";
+                var user = userManager.Users.FirstOrDefault(u => u.Id == r.UserID);
+                var Profile = user?.ProfilePicturePath;
                 var doctorName = doctor != null
                     ? $"{doctor.FirstName ?? "غير متوفر"} {doctor.SecondName ?? ""} {doctor.LastName ?? ""}".Trim()
                     : "Doctor not found";
                
                 return new
                 {
-                    //userId = r.UserID,
                     userName = userName,
                     TestName = test?.TestName ,
-                   // TestID = r.TestID,
                     Score = r.Score,
                     TakenAt = r.TakenAt,
+                    image = r.applicationUser.ProfilePicturePath,
                     CategoryName = category?.Name,
                     DoctorName = doctorName,
                     Percentage = percentage,
