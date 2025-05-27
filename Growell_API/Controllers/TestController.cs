@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Models;
 using System.Linq.Expressions;
 using Utility;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Growell_API.Controllers
 {
@@ -29,16 +30,38 @@ namespace Growell_API.Controllers
             this.categoryRepository = categoryRepository;
         }
         [HttpGet("Index")]
-        public IActionResult Index()
+        public IActionResult Index(int? doctorId)
         {
-            var tests = testRepository.Get(Include: new Expression<Func<Test, object>>[]
-            {
-                t => t.Doctor,
-                t => t.Questions
-            }).ToList();
+            // جلب التيستات مع علاقة الدكتور والأسئلة
+            var tests = testRepository.Get(
+                Include: new Expression<Func<Test, object>>[]
+                {
+            t => t.Doctor,
+            t => t.Questions
+                },
+                expression: doctorId.HasValue ? (t => t.DoctorID == doctorId.Value) : null
+            ).ToList();
 
-            return Ok(tests);
+            if (!tests.Any())
+            {
+                return NotFound(new { message = "No tests found." });
+            }
+
+            var result = tests.Select(test => new
+            {
+                TestId = test.TestID,
+                TestName = test.TestName,
+                Description = test.Description,
+                NumberOfQuestions = test.Questions != null ? test.Questions.Count : 0,
+                IsActive = test.IsActive,
+                DoctorName = test.Doctor != null ? test.Doctor.FirstName + " " + test.Doctor.LastName : null,
+                ImageUrl = test.Doctor?.ImgUrl
+            });
+
+            return Ok(result);
         }
+
+
 
         [HttpPost("Create")]
         public IActionResult Create([FromBody] Test test)

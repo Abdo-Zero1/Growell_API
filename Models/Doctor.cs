@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Models
 {
@@ -15,9 +16,6 @@ namespace Models
         public string AboutMe { get; set; } = null;
         public string? AboutOfKids { get; set; }
         public string TargetAgeGroup { get; set; } 
-
-
-
         public string Description { get; set; } 
         public int AveRating { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -27,12 +25,15 @@ namespace Models
         public string Education { get; set; } 
         public int Age { get; set; }
         public string? ImgUrl { get; set; }
+        public string? UserID { get; set; }
 
         public ICollection<Test> Tests { get; set; }
         public ICollection<TestResult> TestResults { get; set; }
-        public string? UserID { get; set; }
+        public ICollection<Question> Questions { get; set; } 
 
-        
+
+
+
 
 
 

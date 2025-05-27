@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -41,5 +42,11 @@ namespace Models
         public int TestID { get; set; }
         [JsonIgnore]
         public Test? Test { get; set; }
+        public int? DoctorID { get; set; }
+
+        [JsonIgnore]
+        public Doctor? Doctor { get; set; }
+
+
     }
 }
