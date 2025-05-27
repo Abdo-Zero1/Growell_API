@@ -55,7 +55,8 @@ namespace Growell_API.Controllers
                 NumberOfQuestions = test.Questions != null ? test.Questions.Count : 0,
                 IsActive = test.IsActive,
                 DoctorName = test.Doctor != null ? test.Doctor.FirstName + " " + test.Doctor.LastName : null,
-                ImageUrl = test.Doctor?.ImgUrl
+                ImageUrl = test.Doctor?.ImgUrl,
+                bio = test.Doctor?.Bio, 
             });
 
             return Ok(result);

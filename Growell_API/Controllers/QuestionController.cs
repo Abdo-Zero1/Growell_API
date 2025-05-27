@@ -66,6 +66,7 @@ namespace Growell_API.Controllers
                         doctors[q.DoctorID.Value].DoctorID,
                         doctors[q.DoctorID.Value].FirstName,
                         doctors[q.DoctorID.Value].LastName,
+                        doctors[q.DoctorID.Value].Bio,
                         doctors[q.DoctorID.Value].ImgUrl
                     } : null
                 });
