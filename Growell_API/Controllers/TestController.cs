@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models;
 using System.Linq.Expressions;
+using System.Security.Claims;
 using Utility;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -13,7 +14,7 @@ namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize(Roles = $"{SD.DoctorRole}")]
+    [Authorize]
 
     public class TestController : ControllerBase
     {
@@ -29,51 +30,75 @@ namespace Growell_API.Controllers
             this.questionRepository = questionRepository;
             this.categoryRepository = categoryRepository;
         }
+        [Authorize]
         [HttpGet("Index")]
-        public IActionResult Index(int? doctorId)
+        public IActionResult Index()
         {
-            // جلب التيستات مع علاقة الدكتور والأسئلة
-            var tests = testRepository.Get(
-                Include: new Expression<Func<Test, object>>[]
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int doctorId))
                 {
-            t => t.Doctor,
-            t => t.Questions
-                },
-                expression: doctorId.HasValue ? (t => t.DoctorID == doctorId.Value) : null
-            ).ToList();
+                    return Unauthorized(new { message = "Invalid token or DoctorID is missing." });
+                }
 
-            if (!tests.Any())
-            {
-                return NotFound(new { message = "No tests found." });
+                var tests = testRepository.Get(
+                    Include: new Expression<Func<Test, object>>[]
+                    {
+                t => t.Doctor,
+                t => t.Questions
+                    },
+                    expression: t => t.DoctorID == doctorId
+                ).ToList();
+
+                if (!tests.Any())
+                {
+                    return NotFound(new { message = "No tests found for the current doctor." });
+                }
+
+                var result = tests.Select(test => new
+                {
+                    TestId = test.TestID,
+                    TestName = test.TestName,
+                    Description = test.Description,
+                    NumberOfQuestions = test.Questions?.Count ?? 0,
+                    IsActive = test.IsActive,
+                    DoctorName = test.Doctor != null ? $"{test.Doctor.FirstName} {test.Doctor.LastName}" : null,
+                    ImageUrl = test.Doctor?.ImgUrl,
+                    Bio = test.Doctor?.Bio,
+                });
+
+                return Ok(result);
             }
-
-            var result = tests.Select(test => new
+            catch (Exception ex)
             {
-                TestId = test.TestID,
-                TestName = test.TestName,
-                Description = test.Description,
-                NumberOfQuestions = test.Questions != null ? test.Questions.Count : 0,
-                IsActive = test.IsActive,
-                DoctorName = test.Doctor != null ? test.Doctor.FirstName + " " + test.Doctor.LastName : null,
-                ImageUrl = test.Doctor?.ImgUrl,
-                bio = test.Doctor?.Bio, 
-            });
-
-            return Ok(result);
+                return StatusCode(500, new
+                {
+                    message = "An error occurred while retrieving tests.",
+                    error = ex.Message
+                });
+            }
         }
 
-
-
+        [Authorize]
         [HttpPost("Create")]
         public IActionResult Create([FromBody] Test test)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            if (test.DoctorID == 0 || test.CategoryID == 0)
-                return BadRequest(new { message = "DoctorID and CategoryID are required." });
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int doctorId))
+            {
+                return Unauthorized(new { message = "Invalid token or DoctorID is missing." });
+            }
 
-            var doctor = doctorRepository.GetOne(null, d => d.DoctorID == test.DoctorID);
+            test.DoctorID = doctorId;
+
+            if (test.CategoryID == 0)
+                return BadRequest(new { message = "CategoryID is required." });
+
+            var doctor = doctorRepository.GetOne(null, d => d.DoctorID == doctorId);
             if (doctor == null)
                 return BadRequest(new { message = "Doctor not found." });
 
@@ -94,21 +119,29 @@ namespace Growell_API.Controllers
             }
         }
 
+
+        [Authorize]
         [HttpPut("Edit/{id}")]
         public IActionResult Edit(int id, [FromBody] Test test)
         {
             try
             {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int doctorId))
+                {
+                    return Unauthorized(new { message = "Invalid token or DoctorID is missing." });
+                }
 
                 var existingTest = testRepository.GetOne(expression: t => t.TestID == id);
-                //if (id != test.TestID)
-                //{
-                //    return BadRequest(new { message = "Test ID mismatch" });
-                //}
 
                 if (existingTest == null)
                 {
                     return NotFound(new { message = "Test not found" });
+                }
+
+                if (existingTest.DoctorID != doctorId)
+                {
+                    return Forbid("You are not authorized to edit this test.");
                 }
 
                 existingTest.TestName = test.TestName;
@@ -116,12 +149,12 @@ namespace Growell_API.Controllers
                 existingTest.CategoryID = test.CategoryID;
                 existingTest.NumberOfQuestions = test.NumberOfQuestions;
                 existingTest.IsActive = test.IsActive;
-                existingTest.DoctorID = test.DoctorID;
+                existingTest.DoctorID = doctorId;  
 
                 testRepository.Edit(existingTest);
                 testRepository.Commit();
 
-                return Ok(new { message = "Test updated successfully", testId = test.TestID });
+                return Ok(new { message = "Test updated successfully", testId = existingTest.TestID });
             }
             catch (Exception ex)
             {
@@ -129,15 +162,28 @@ namespace Growell_API.Controllers
             }
         }
 
+        [Authorize]
         [HttpDelete("Delete/{id}")]
         public IActionResult Delete(int id)
         {
             try
             {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int doctorId))
+                {
+                    return Unauthorized(new { message = "Invalid token or DoctorID is missing." });
+                }
+
                 var test = testRepository.GetOne(expression: t => t.TestID == id);
+
                 if (test == null)
                 {
                     return NotFound(new { message = "Test not found" });
+                }
+
+                if (test.DoctorID != doctorId)
+                {
+                    return Forbid("You are not authorized to delete this test.");
                 }
 
                 testRepository.Delete(test);
@@ -150,6 +196,7 @@ namespace Growell_API.Controllers
                 return StatusCode(500, new { message = "An error occurred while deleting the test", error = ex.Message });
             }
         }
+
 
 
     }

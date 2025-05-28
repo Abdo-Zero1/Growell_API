@@ -7,13 +7,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models;
 using System.Linq.Expressions;
+using System.Security.Claims;
 using Utility;
 
 namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-   //thorize(Roles = $"{SD.DoctorRole}")]
+   [Authorize]
 
     public class QuestionController : ControllerBase
     {
@@ -27,28 +28,31 @@ namespace Growell_API.Controllers
             this.testRepository = testRepository;
             this.doctorRepository = doctorRepository;
         }
+        [Authorize]
         [HttpGet("Index")]
-        public IActionResult Index(int? doctorId)
+        public IActionResult Index()
         {
             try
             {
-                var questions = doctorId.HasValue
-                    ? questionRepository.Get(expression: q => q.DoctorID == doctorId.Value)
-                    : questionRepository.Get();
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int doctorId))
+                {
+                    return Unauthorized(new { message = "Invalid token or DoctorID is missing." });
+                }
+
+                var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == doctorId);
+                if (doctor == null)
+                {
+                    return NotFound(new { message = "Doctor not found." });
+                }
+
+                var questions = questionRepository.Get(expression: q => q.DoctorID == doctorId);
 
                 if (!questions.Any())
                 {
-                    return NotFound(new { message = "No questions found." });
+                    return NotFound(new { message = "No questions found for the current doctor." });
                 }
-
-                var doctorIds = questions
-                    .Where(q => q.DoctorID.HasValue)
-                    .Select(q => q.DoctorID.Value)    
-                    .Distinct()
-                    .ToList();
-
-                var doctors = doctorRepository.Get(expression: d => doctorIds.Contains(d.DoctorID))
-                    .ToDictionary(d => d.DoctorID);
 
                 var result = questions.Select(q => new
                 {
@@ -61,14 +65,14 @@ namespace Growell_API.Controllers
                     q.CorrectAnswer,
                     q.OrderNumber,
                     q.CreatedAt,
-                    Doctor = q.DoctorID.HasValue && doctors.ContainsKey(q.DoctorID.Value) ? new
+                    Doctor = new
                     {
-                        doctors[q.DoctorID.Value].DoctorID,
-                        doctors[q.DoctorID.Value].FirstName,
-                        doctors[q.DoctorID.Value].LastName,
-                        doctors[q.DoctorID.Value].Bio,
-                        doctors[q.DoctorID.Value].ImgUrl
-                    } : null
+                        doctor.DoctorID,
+                        doctor.FirstName,
+                        doctor.LastName,
+                        doctor.Bio,
+                        doctor.ImgUrl
+                    }
                 });
 
                 return Ok(result);
@@ -83,6 +87,8 @@ namespace Growell_API.Controllers
             }
         }
 
+
+        [Authorize]
         [HttpPost("Create")]
         public IActionResult Create([FromBody] Question question)
         {
@@ -97,13 +103,21 @@ namespace Growell_API.Controllers
 
             try
             {
-                var relatedTest = testRepository.GetOne(null, t => t.TestID == question.TestID);
-                if (relatedTest == null)
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int doctorId))
                 {
-                    return NotFound(new { message = "The associated test does not exist." });
+                    return Unauthorized(new { message = "Invalid token or DoctorID missing." });
                 }
 
+                // جلب التيست والتأكد انه يعود للطبيب صاحب التوكن
+                var relatedTest = testRepository.GetOne(null, t => t.TestID == question.TestID && t.DoctorID == doctorId);
+                if (relatedTest == null)
+                {
+                    return NotFound(new { message = "The associated test does not exist or does not belong to the current doctor." });
+                }
 
+                // ربط السؤال بالطبيب صاحب التوكن
+                question.DoctorID = doctorId;
                 question.CreatedAt = DateTime.Now;
 
                 questionRepository.Create(question);
@@ -125,24 +139,29 @@ namespace Growell_API.Controllers
             }
         }
 
+
+        [Authorize]
         [HttpGet("{id}")]
         public IActionResult Get(int id)
         {
-            var question = questionRepository.GetOne(null, g => g.QuestionID == id);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int doctorId))
+            {
+                return Unauthorized(new { message = "Invalid token or DoctorID missing." });
+            }
+
+            var question = questionRepository.GetOne(null, q => q.QuestionID == id && q.DoctorID == doctorId);
 
             if (question == null)
             {
                 return NotFound(new
                 {
-                    message = "Question not found.",
+                    message = "Question not found or you do not have access to it.",
                     questionId = id
                 });
             }
 
-            // جلب بيانات الدكتور بناءً على DoctorID الخاص بالسؤال
-            var doctor = question.DoctorID != null
-                ? doctorRepository.GetOne(null, d => d.DoctorID == question.DoctorID)
-                : null;
+            var doctor = doctorRepository.GetOne(null, d => d.DoctorID == doctorId);
 
             var result = new
             {
@@ -170,10 +189,8 @@ namespace Growell_API.Controllers
                 data = result
             });
         }
-
-
-
-        [HttpPut("Edit{id}")]
+        [Authorize]
+        [HttpPut("Edit/{id}")]
         public IActionResult Edit(int id, [FromBody] Question updatedQuestion)
         {
             if (!ModelState.IsValid)
@@ -185,20 +202,27 @@ namespace Growell_API.Controllers
                 });
             }
 
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int doctorIdFromToken))
+            {
+                return Unauthorized(new { message = "Invalid token or DoctorID missing." });
+            }
+
             try
             {
-                var oldQuestion = questionRepository.GetOne(expression: q => q.QuestionID == id);
+                var oldQuestion = questionRepository.GetOne(expression: q => q.QuestionID == id && q.DoctorID == doctorIdFromToken);
                 if (oldQuestion == null)
                 {
-                    return NotFound(new { message = "Question not found." });
+                    return NotFound(new { message = "Question not found or you don't have permission to edit it." });
                 }
 
-                var doctorExists = doctorRepository.GetOne(expression: d => d.DoctorID == updatedQuestion.DoctorID);
+                var doctorExists = doctorRepository.GetOne(expression: d => d.DoctorID == doctorIdFromToken);
                 if (doctorExists == null)
                 {
-                    return NotFound(new { message = "The selected doctor does not exist." });
+                    return NotFound(new { message = "Doctor associated with token does not exist." });
                 }
 
+                // تحديث باقي الحقول بدون تغيير DoctorID
                 oldQuestion.QuestionText = updatedQuestion.QuestionText;
                 oldQuestion.AnswerOption1 = updatedQuestion.AnswerOption1;
                 oldQuestion.AnswerOption2 = updatedQuestion.AnswerOption2;
@@ -207,7 +231,9 @@ namespace Growell_API.Controllers
                 oldQuestion.CorrectAnswer = updatedQuestion.CorrectAnswer;
                 oldQuestion.OrderNumber = updatedQuestion.OrderNumber;
                 oldQuestion.TestID = updatedQuestion.TestID;
-                oldQuestion.DoctorID = updatedQuestion.DoctorID;
+
+                // تأكد DoctorID ثابت حسب التوكن
+                oldQuestion.DoctorID = doctorIdFromToken;
 
                 questionRepository.Edit(oldQuestion);
                 questionRepository.Commit();
@@ -219,22 +245,28 @@ namespace Growell_API.Controllers
                 return StatusCode(500, new { message = "An error occurred while updating the question.", error = ex.Message });
             }
         }
+
+
+        [Authorize]
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int doctorIdFromToken))
+            {
+                return Unauthorized(new { message = "Invalid token or DoctorID missing." });
+            }
+
             try
             {
                 var question = questionRepository.GetOne(
-                    includeProps: new Expression<Func<Question, object>>[]
-                    {
-                q => q.Doctor 
-                    },
-                    expression: q => q.QuestionID == id
+                    includeProps: new Expression<Func<Question, object>>[] { q => q.Doctor },
+                    expression: q => q.QuestionID == id && q.DoctorID == doctorIdFromToken
                 );
 
                 if (question == null)
                 {
-                    return NotFound(new { message = "Question not found." });
+                    return NotFound(new { message = "Question not found or you don't have permission to delete it." });
                 }
 
                 questionRepository.Delete(question);
@@ -259,6 +291,7 @@ namespace Growell_API.Controllers
                 });
             }
         }
+
 
     }
 }

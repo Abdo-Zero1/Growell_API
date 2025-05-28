@@ -10,6 +10,6 @@ namespace DataAccess.Repository.IRepository
 {
     public interface IDoctorRepository:IRepository<Doctor>
     {
-        
+        Doctor? GetDoctorByEmail(string email);
     }
 }

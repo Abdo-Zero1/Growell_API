@@ -38,78 +38,83 @@ namespace Growell_API.Controllers
             this.userManager = userManager;
         }
 
+        [Authorize]
         [HttpGet("GetReport")]
         public IActionResult GetReport()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized(new { message = "User not authenticated." });
-
-            var roles = User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList();
-
-            IEnumerable<TestResult> testResults;
-
-            if (roles.Contains(SD.AdminRole))
+            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int doctorIdFromToken))
             {
-                testResults = testResultRepository.Get().ToList();
+                return Unauthorized(new { message = "Invalid token or DoctorID missing." });
             }
-            else if (roles.Contains(SD.DoctorRole))
+
+            try
             {
+                // تحديد إذا كان المستخدم طبيبًا بناءً على UserID
                 var doctor = doctorRepository.GetOne(expression: d => d.UserID == userId);
-                if (doctor == null)
-                    return BadRequest(new { message = "Doctor not found for this user." });
 
-                testResults = testResultRepository.Get(expression: r => r.DoctorID == doctor.DoctorID).ToList();
-            }
-            else
-            {
-                testResults = testResultRepository.Get(expression: r => r.UserID == userId).ToList();
-            }
+                IEnumerable<TestResult> testResults;
 
-            if (testResults == null || !testResults.Any())
-                return NotFound(new
+                if (doctor != null)
                 {
-                    messageEn = "No test results found for the user.",
-                    messageAr = "لا توجد نتائج اختبارات لهذا المستخدم."
-                });
-
-            var userIds = testResults.Select(r => r.UserID).Distinct().ToList();
-            var users = userManager.Users.Where(u => userIds.Contains(u.Id))
-                                         .Select(u => new { u.Id, u.UserName })
-                                         .ToList();
-
-            var report = testResults.Select(r =>
-            {
-                var test = testRepository.GetOne(expression: t => t.TestID == r.TestID);
-                var category = CategoryRepository.GetOne(expression: c => c.CategoryID == test.CategoryID);
-                var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == test.DoctorID);
-                var totalQuestions = questionRepository.Get(expression: q => q.TestID == r.TestID).Count();
-                double percentage = totalQuestions > 0 ? (double)r.Score / totalQuestions * 100 : 0;
-
-                var userName = users.FirstOrDefault(u => u.Id == r.UserID)?.UserName ?? "Unknown User";
-                var user = userManager.Users.FirstOrDefault(u => u.Id == r.UserID);
-                var Profile = user?.ProfilePicturePath;
-                var doctorName = doctor != null
-                    ? $"{doctor.FirstName ?? "غير متوفر"} {doctor.SecondName ?? ""} {doctor.LastName ?? ""}".Trim()
-                    : "Doctor not found";
-               
-                return new
+                    // إذا كان المستخدم طبيبًا، إرجاع تقارير المرضى الخاصة بالطبيب
+                    testResults = testResultRepository.Get(expression: r => r.DoctorID == doctor.DoctorID).ToList();
+                }
+                else
                 {
-                    userName = userName,
-                    TestName = test?.TestName ,
-                    Score = r.Score,
-                    TakenAt = r.TakenAt,
-                    image = r.applicationUser.ProfilePicturePath,
-                    CategoryName = category?.Name,
-                    DoctorName = doctorName,
-                    Percentage = percentage,
-                    ClassificationEn = GetDelayClassificationEn(percentage),
-                    ClassificationAr = GetDelayClassificationAr(percentage)
-                };
-            }).ToList();
+                    // إذا كان المستخدم عاديًا، إرجاع تقاريره فقط
+                    testResults = testResultRepository.Get(expression: r => r.UserID == userId).ToList();
+                }
 
-            return Ok(report);
+                if (!testResults.Any())
+                {
+                    return NotFound(new
+                    {
+                        messageEn = "No test results found for the user.",
+                        messageAr = "لا توجد نتائج اختبارات لهذا المستخدم."
+                    });
+                }
+
+                var userIds = testResults.Select(r => r.UserID).Distinct().ToList();
+                var users = userManager.Users.Where(u => userIds.Contains(u.Id))
+                                             .Select(u => new { u.Id, u.UserName, u.ProfilePicturePath })
+                                             .ToList();
+
+                var report = testResults.Select(r =>
+                {
+                    var test = testRepository.GetOne(expression: t => t.TestID == r.TestID);
+                    var category = CategoryRepository.GetOne(expression: c => c.CategoryID == test.CategoryID);
+                    var totalQuestions = questionRepository.Get(expression: q => q.TestID == r.TestID).Count();
+                    double percentage = totalQuestions > 0 ? (double)r.Score / totalQuestions * 100 : 0;
+
+                    var user = users.FirstOrDefault(u => u.Id == r.UserID);
+                    var doctorName = doctor != null
+                        ? $"{doctor.FirstName ?? "غير متوفر"} {doctor.SecondName ?? ""} {doctor.LastName ?? ""}".Trim()
+                        : "Doctor not found";
+
+                    return new
+                    {
+                        UserName = user?.UserName,
+                        ProfilePicture = user?.ProfilePicturePath,
+                        TestName = test?.TestName,
+                        Score = r.Score,
+                        TakenAt = r.TakenAt,
+                        CategoryName = category?.Name,
+                        DoctorName = doctorName,
+                        Percentage = percentage,
+                        ClassificationEn = GetDelayClassificationEn(percentage),
+                        ClassificationAr = GetDelayClassificationAr(percentage)
+                    };
+                }).ToList();
+
+                return Ok(report);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while retrieving the report.", error = ex.Message });
+            }
         }
+
 
 
 

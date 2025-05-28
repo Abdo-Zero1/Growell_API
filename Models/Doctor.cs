@@ -10,6 +10,7 @@ namespace Models
         public string SecondName { get; set; } = null;
         public string LastName { get; set; }
         public string Email { get; set; }
+        public string? Address { get; set; } 
         public string Gender { get; set; }
         public string Bio { get; set; } = null;
 
@@ -25,17 +26,13 @@ namespace Models
         public string Education { get; set; } 
         public int Age { get; set; }
         public string? ImgUrl { get; set; }
+        public string passwordHash { get; set; }
+
         public string? UserID { get; set; }
 
         public ICollection<Test> Tests { get; set; }
         public ICollection<TestResult> TestResults { get; set; }
         public ICollection<Question> Questions { get; set; } 
-
-
-
-
-
-
 
     }
 }

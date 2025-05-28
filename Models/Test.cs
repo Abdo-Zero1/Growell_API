@@ -29,9 +29,7 @@ namespace Models
         public int NumberOfQuestions { get; set; }
 
         public bool IsActive { get; set; }
-
-        [Required(ErrorMessage = "DoctorID is required.")]
-        [Range(1, int.MaxValue, ErrorMessage = "DoctorID must be a positive number.")]
+        [JsonIgnore]
         public int DoctorID { get; set; }
         [JsonIgnore]
         public Doctor? Doctor { get; set; }

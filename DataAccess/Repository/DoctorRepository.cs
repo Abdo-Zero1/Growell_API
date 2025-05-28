@@ -18,8 +18,12 @@ namespace DataAccess.Repository
         {
             this.dbContext = dbContext;
         }
+        public Doctor? GetDoctorByEmail(string email)
+        {
+            return dbContext.Set<Doctor>().FirstOrDefault(d => d.Email == email);
+        }
 
 
-      
+
     }
 }

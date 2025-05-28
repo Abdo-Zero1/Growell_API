@@ -42,6 +42,7 @@ namespace Models
         public int TestID { get; set; }
         [JsonIgnore]
         public Test? Test { get; set; }
+        [JsonIgnore]
         public int? DoctorID { get; set; }
 
         [JsonIgnore]
