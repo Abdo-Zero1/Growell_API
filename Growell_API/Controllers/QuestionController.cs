@@ -51,8 +51,20 @@ namespace Growell_API.Controllers
 
                 if (!questions.Any())
                 {
-                    return NotFound(new { message = "No questions found for the current doctor." });
+                    return Ok(new
+                    {
+                        message = "No questions found for the current doctor.",
+                        Doctor = new
+                        {
+                            doctor.DoctorID,
+                            doctor.FirstName,
+                            doctor.LastName,
+                            doctor.Bio,
+                            doctor.ImgUrl
+                        }
+                    });
                 }
+
 
                 var result = questions.Select(q => new
                 {
@@ -87,7 +99,6 @@ namespace Growell_API.Controllers
             }
         }
 
-
         [Authorize]
         [HttpPost("Create")]
         public IActionResult Create([FromBody] Question question)
@@ -109,14 +120,35 @@ namespace Growell_API.Controllers
                     return Unauthorized(new { message = "Invalid token or DoctorID missing." });
                 }
 
-                // جلب التيست والتأكد انه يعود للطبيب صاحب التوكن
-                var relatedTest = testRepository.GetOne(null, t => t.TestID == question.TestID && t.DoctorID == doctorId);
+                var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == doctorId);
+                if (doctor == null)
+                {
+                    return NotFound(new { message = "Doctor not found." });
+                }
+
+                var relatedTests = testRepository.Get(expression: t => t.DoctorID == doctorId).ToList();
+                if (!relatedTests.Any())
+                {
+                    return NotFound(new
+                    {
+                        message = "No tests found for the current doctor. Please create a test before adding questions.",
+                        Doctor = new
+                        {
+                            doctor.DoctorID,
+                            doctor.FirstName,
+                            doctor.LastName,
+                            doctor.Bio,
+                            doctor.ImgUrl
+                        }
+                    });
+                }
+
+                var relatedTest = relatedTests.FirstOrDefault(t => t.TestID == question.TestID);
                 if (relatedTest == null)
                 {
                     return NotFound(new { message = "The associated test does not exist or does not belong to the current doctor." });
                 }
 
-                // ربط السؤال بالطبيب صاحب التوكن
                 question.DoctorID = doctorId;
                 question.CreatedAt = DateTime.Now;
 
@@ -138,6 +170,7 @@ namespace Growell_API.Controllers
                 });
             }
         }
+
 
 
         [Authorize]
@@ -174,6 +207,8 @@ namespace Growell_API.Controllers
                 question.CorrectAnswer,
                 question.OrderNumber,
                 question.CreatedAt,
+                question.CreatedBy,
+                question.TestID,
                 Doctor = doctor != null ? new
                 {
                     doctor.DoctorID,
@@ -222,7 +257,6 @@ namespace Growell_API.Controllers
                     return NotFound(new { message = "Doctor associated with token does not exist." });
                 }
 
-                // تحديث باقي الحقول بدون تغيير DoctorID
                 oldQuestion.QuestionText = updatedQuestion.QuestionText;
                 oldQuestion.AnswerOption1 = updatedQuestion.AnswerOption1;
                 oldQuestion.AnswerOption2 = updatedQuestion.AnswerOption2;
@@ -230,9 +264,10 @@ namespace Growell_API.Controllers
                 oldQuestion.AnswerOption4 = updatedQuestion.AnswerOption4;
                 oldQuestion.CorrectAnswer = updatedQuestion.CorrectAnswer;
                 oldQuestion.OrderNumber = updatedQuestion.OrderNumber;
+                oldQuestion.CreatedBy = updatedQuestion.CreatedBy; 
+                oldQuestion.CreatedAt = DateTime.Now; 
                 oldQuestion.TestID = updatedQuestion.TestID;
 
-                // تأكد DoctorID ثابت حسب التوكن
                 oldQuestion.DoctorID = doctorIdFromToken;
 
                 questionRepository.Edit(oldQuestion);

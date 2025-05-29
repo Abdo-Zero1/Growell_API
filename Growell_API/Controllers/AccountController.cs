@@ -158,6 +158,7 @@ namespace Growell_API.Controllers
         }
 
         [HttpPost("ChangePassword")]
+        [Authorize]
         public async Task<IActionResult> ChangePassword(ChangePasswordDTO changePasswordDTO)
         {
             if (!ModelState.IsValid)

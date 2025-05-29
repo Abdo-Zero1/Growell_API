@@ -42,6 +42,12 @@ namespace Growell_API.Controllers
                     return Unauthorized(new { message = "Invalid token or DoctorID is missing." });
                 }
 
+                var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == doctorId);
+                if (doctor == null)
+                {
+                    return NotFound(new { message = "Doctor not found." });
+                }
+
                 var tests = testRepository.Get(
                     Include: new Expression<Func<Test, object>>[]
                     {
@@ -53,7 +59,18 @@ namespace Growell_API.Controllers
 
                 if (!tests.Any())
                 {
-                    return NotFound(new { message = "No tests found for the current doctor." });
+                    return Ok(new
+                    {
+                        message = "No tests found for the current doctor.",
+                        Doctor = new
+                        {
+                            doctor.DoctorID,
+                            doctor.FirstName,
+                            doctor.LastName,
+                            doctor.Bio,
+                            doctor.ImgUrl
+                        }
+                    });
                 }
 
                 var result = tests.Select(test => new
@@ -63,9 +80,13 @@ namespace Growell_API.Controllers
                     Description = test.Description,
                     NumberOfQuestions = test.Questions?.Count ?? 0,
                     IsActive = test.IsActive,
-                    DoctorName = test.Doctor != null ? $"{test.Doctor.FirstName} {test.Doctor.LastName}" : null,
-                    ImageUrl = test.Doctor?.ImgUrl,
-                    Bio = test.Doctor?.Bio,
+                    Doctor = new
+                    {
+                        DoctorName = test.Doctor != null ? $"{test.Doctor.FirstName} {test.Doctor.LastName}" : null,
+                        ImageUrl = test.Doctor?.ImgUrl,
+                        Bio = test.Doctor?.Bio,
+
+                    }
                 });
 
                 return Ok(result);
@@ -79,6 +100,7 @@ namespace Growell_API.Controllers
                 });
             }
         }
+
 
         [Authorize]
         [HttpPost("Create")]
@@ -118,6 +140,76 @@ namespace Growell_API.Controllers
                 return StatusCode(500, new { message = "An error occurred while creating the test", error = ex.Message });
             }
         }
+
+        [Authorize]
+        [HttpGet("GetById/{testId}")]
+        public IActionResult GetById(int testId)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int doctorId))
+                {
+                    return Unauthorized(new { message = "Invalid token or DoctorID missing." });
+                }
+
+                var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == doctorId);
+                if (doctor == null)
+                {
+                    return NotFound(new { message = "Doctor not found." });
+                }
+
+                var test = testRepository.GetOne(expression: t => t.TestID == testId && t.DoctorID == doctorId);
+
+                if (test != null)
+                {
+                    test.Doctor = doctorRepository.GetOne(expression: d => d.DoctorID == test.DoctorID);
+                    test.Questions = questionRepository.Get( expression: q => q.TestID == test.TestID).ToList();
+                }
+
+
+                var result = new
+                {
+                    TestId = test.TestID,
+                    TestName = test.TestName,
+                    Description = test.Description,
+                    NumberOfQuestions = test.Questions?.Count ?? 0,
+                    IsActive = test.IsActive,
+                    CategoryID = test.CategoryID,
+                    //Questions = test.Questions?.Select(q => new
+                    //{
+                    //    q.QuestionID,
+                    //    q.QuestionText,
+                    //    q.AnswerOption1,
+                    //    q.AnswerOption2,
+                    //    q.AnswerOption3,
+                    //    q.AnswerOption4,
+                    //    q.CorrectAnswer,
+                    //    q.OrderNumber,
+                    //    q.CreatedAt
+                    //}),
+                    Doctor = new
+                    {
+                        doctor.DoctorID,
+                        doctor.FirstName,
+                        doctor.LastName,
+                        doctor.Bio,
+                        doctor.ImgUrl
+                    }
+                };
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "An error occurred while retrieving the test.",
+                    error = ex.Message
+                });
+            }
+        }
+
 
 
         [Authorize]
