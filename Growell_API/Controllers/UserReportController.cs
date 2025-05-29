@@ -43,26 +43,27 @@ namespace Growell_API.Controllers
         public IActionResult GetReport()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int doctorIdFromToken))
+
+            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int userIdFromToken))
             {
-                return Unauthorized(new { message = "Invalid token or DoctorID missing." });
+                return Unauthorized(new { message = "Invalid token or UserID missing." });
             }
 
             try
             {
-                // تحديد إذا كان المستخدم طبيبًا بناءً على UserID
+                // التحقق مما إذا كان المستخدم طبيبًا
                 var doctor = doctorRepository.GetOne(expression: d => d.UserID == userId);
 
                 IEnumerable<TestResult> testResults;
 
                 if (doctor != null)
                 {
-                    // إذا كان المستخدم طبيبًا، إرجاع تقارير المرضى الخاصة بالطبيب
+                    // المستخدم دكتور، إرجاع تقارير الأطفال المرتبطين به فقط
                     testResults = testResultRepository.Get(expression: r => r.DoctorID == doctor.DoctorID).ToList();
                 }
                 else
                 {
-                    // إذا كان المستخدم عاديًا، إرجاع تقاريره فقط
+                    // المستخدم ليس دكتورًا، إرجاع تقاريره فقط
                     testResults = testResultRepository.Get(expression: r => r.UserID == userId).ToList();
                 }
 
@@ -75,10 +76,11 @@ namespace Growell_API.Controllers
                     });
                 }
 
+                // تجهيز تقرير النتايج
                 var userIds = testResults.Select(r => r.UserID).Distinct().ToList();
                 var users = userManager.Users.Where(u => userIds.Contains(u.Id))
-                                             .Select(u => new { u.Id, u.UserName, u.ProfilePicturePath })
-                                             .ToList();
+                                              .Select(u => new { u.Id, u.UserName, u.ProfilePicturePath })
+                                              .ToList();
 
                 var report = testResults.Select(r =>
                 {
@@ -114,8 +116,6 @@ namespace Growell_API.Controllers
                 return StatusCode(500, new { message = "An error occurred while retrieving the report.", error = ex.Message });
             }
         }
-
-
 
 
         private string GetDelayClassificationEn(double percentage)

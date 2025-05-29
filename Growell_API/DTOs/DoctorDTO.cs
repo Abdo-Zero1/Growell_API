@@ -17,13 +17,13 @@ namespace Growell_API.DTOs
         public int YearsOfExperience { get; set; }
         public string Education { get; set; } = null!;
         public int Age { get; set; }
+        public string Address { get; set; } 
         public IFormFile? ImgUrl { get; set; }
         public string? AboutOfKids { get; set; }
         public string? TargetAgeGroup { get; set; }
         public string? UserID { get; set; } = null!;
 
 
-        //public ICollection<AppointmentDTO> appointmentDTOs { get; set; }
 
 
     }

@@ -29,7 +29,7 @@ namespace Growell_API.Controllers
             this.doctorRepository = doctorRepository;
         }
         [Authorize]
-        [HttpGet("Index")]
+        [HttpGet]
         public IActionResult Index()
         {
             try

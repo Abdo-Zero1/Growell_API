@@ -126,7 +126,11 @@ namespace Growell_API.Controllers
                 return Unauthorized("Invalid email or password.");
 
             var token = GenerateJwtToken(doctor);
-            return Ok(new { Token = token });
+            return Ok(new
+            {
+                message = "Doctor Login successfully",
+                Token = token
+            });
         }
         [Authorize]
         [HttpPost("logout")]
@@ -330,10 +334,11 @@ namespace Growell_API.Controllers
         {
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, doctor.DoctorID.ToString()),
-                new Claim(ClaimTypes.Email, doctor.Email),
-                new Claim("FullName", $"{doctor.FirstName} {doctor.LastName}")
-            };
+        new Claim(ClaimTypes.NameIdentifier, doctor.DoctorID.ToString()),
+        new Claim(ClaimTypes.Email, doctor.Email),
+        new Claim(ClaimTypes.Name, $"{doctor.FirstName} {doctor.LastName}"),
+        new Claim(ClaimTypes.Role, "Doctor") 
+    };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -342,10 +347,11 @@ namespace Growell_API.Controllers
                 issuer: _configuration["JwtSettings:Issuer"],
                 audience: _configuration["JwtSettings:Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddMinutes(double.Parse(_configuration["JwtSettings:ExpiryInMinutes"])),
+                expires: DateTime.UtcNow.AddMinutes(double.Parse(_configuration["JwtSettings:ExpiryInMinutes"])),
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
     }
 }

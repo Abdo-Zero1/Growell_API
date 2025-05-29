@@ -31,8 +31,8 @@ namespace Growell_API.Controllers
             this.categoryRepository = categoryRepository;
         }
         [Authorize]
-        [HttpGet("Index")]
-        public IActionResult Index()
+        [HttpGet("Get")]
+        public IActionResult Get()
         {
             try
             {
