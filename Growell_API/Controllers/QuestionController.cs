@@ -245,7 +245,7 @@ namespace Growell_API.Controllers
 
             try
             {
-                var oldQuestion = questionRepository.GetOne(expression: q => q.QuestionID == id && q.DoctorID == doctorIdFromToken);
+                var oldQuestion = questionRepository.GetOne( expression: q => q.QuestionID == id && q.DoctorID == doctorIdFromToken);
                 if (oldQuestion == null)
                 {
                     return NotFound(new { message = "Question not found or you don't have permission to edit it." });
@@ -257,18 +257,17 @@ namespace Growell_API.Controllers
                     return NotFound(new { message = "Doctor associated with token does not exist." });
                 }
 
-                oldQuestion.QuestionText = updatedQuestion.QuestionText;
-                oldQuestion.AnswerOption1 = updatedQuestion.AnswerOption1;
-                oldQuestion.AnswerOption2 = updatedQuestion.AnswerOption2;
-                oldQuestion.AnswerOption3 = updatedQuestion.AnswerOption3;
-                oldQuestion.AnswerOption4 = updatedQuestion.AnswerOption4;
-                oldQuestion.CorrectAnswer = updatedQuestion.CorrectAnswer;
-                oldQuestion.OrderNumber = updatedQuestion.OrderNumber;
-                oldQuestion.CreatedBy = updatedQuestion.CreatedBy; 
-                oldQuestion.CreatedAt = DateTime.Now; 
-                oldQuestion.TestID = updatedQuestion.TestID;
+                if (!string.IsNullOrEmpty(updatedQuestion.QuestionText)) oldQuestion.QuestionText = updatedQuestion.QuestionText;
+                if (!string.IsNullOrEmpty(updatedQuestion.AnswerOption1)) oldQuestion.AnswerOption1 = updatedQuestion.AnswerOption1;
+                if (!string.IsNullOrEmpty(updatedQuestion.AnswerOption2)) oldQuestion.AnswerOption2 = updatedQuestion.AnswerOption2;
+                if (!string.IsNullOrEmpty(updatedQuestion.AnswerOption3)) oldQuestion.AnswerOption3 = updatedQuestion.AnswerOption3;
+                if (!string.IsNullOrEmpty(updatedQuestion.AnswerOption4))oldQuestion.AnswerOption4 = updatedQuestion.AnswerOption4;
+                if (!string.IsNullOrEmpty(updatedQuestion.CorrectAnswer)) oldQuestion.CorrectAnswer = updatedQuestion.CorrectAnswer;
+                if (updatedQuestion.OrderNumber > 0) oldQuestion.OrderNumber = updatedQuestion.OrderNumber;
+                if (updatedQuestion.TestID > 0) oldQuestion.TestID = updatedQuestion.TestID;
 
-                oldQuestion.DoctorID = doctorIdFromToken;
+                oldQuestion.CreatedBy = doctorIdFromToken; 
+                oldQuestion.CreatedAt = DateTime.Now;     
 
                 questionRepository.Edit(oldQuestion);
                 questionRepository.Commit();
@@ -280,6 +279,7 @@ namespace Growell_API.Controllers
                 return StatusCode(500, new { message = "An error occurred while updating the question.", error = ex.Message });
             }
         }
+
 
 
         [Authorize]

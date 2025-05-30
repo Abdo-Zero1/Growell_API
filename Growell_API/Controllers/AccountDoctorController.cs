@@ -10,6 +10,7 @@ using Growell_API.DTOs;
 using BCrypt.Net;
 using Microsoft.AspNetCore.Identity;
 using DataAccess.Repository;
+using System.Linq.Expressions;
 
 namespace Growell_API.Controllers
 {
@@ -193,58 +194,37 @@ namespace Growell_API.Controllers
                 if (string.IsNullOrEmpty(userId))
                     return Unauthorized("User is not authorized.");
 
-                var doctorId = int.Parse(userId);
+                if (!int.TryParse(userId, out var doctorId))
+                    return BadRequest("Invalid user ID format.");
+
                 var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == doctorId);
 
                 if (doctor == null)
                     return NotFound("Doctor not found.");
 
-                if (!string.IsNullOrEmpty(updateProfileDto.FirstName))
-                    doctor.FirstName = updateProfileDto.FirstName;
-
-                if (!string.IsNullOrEmpty(updateProfileDto.SecondName))
-                    doctor.SecondName = updateProfileDto.SecondName;
-
-                if (!string.IsNullOrEmpty(updateProfileDto.LastName))
-                    doctor.LastName = updateProfileDto.LastName;
-
-                if (!string.IsNullOrEmpty(updateProfileDto.PhoneNumber))
-                    doctor.PhoneNumber = updateProfileDto.PhoneNumber;
-
-                if (!string.IsNullOrEmpty(updateProfileDto.Specialization))
-                    doctor.Specialization = updateProfileDto.Specialization;
-
-                if (!string.IsNullOrEmpty(updateProfileDto.Education))
-                    doctor.Education = updateProfileDto.Education;
-
-                if (!string.IsNullOrEmpty(updateProfileDto.Bio))
-                    doctor.Bio = updateProfileDto.Bio;
-
-                if (!string.IsNullOrEmpty(updateProfileDto.Address))
-                    doctor.Address = updateProfileDto.Address;
-
-                if (updateProfileDto.Age.HasValue)
-                {
-                    doctor.Age = updateProfileDto.Age.Value;
-                }
-
-
-                if (!string.IsNullOrEmpty(updateProfileDto.Email))
-                    doctor.Email = updateProfileDto.Email;
+                if (!string.IsNullOrEmpty(updateProfileDto.FirstName)) doctor.FirstName = updateProfileDto.FirstName;
+                if (!string.IsNullOrEmpty(updateProfileDto.SecondName)) doctor.SecondName = updateProfileDto.SecondName;
+                if (!string.IsNullOrEmpty(updateProfileDto.LastName)) doctor.LastName = updateProfileDto.LastName;
+                if (!string.IsNullOrEmpty(updateProfileDto.PhoneNumber)) doctor.PhoneNumber = updateProfileDto.PhoneNumber;
+                if (!string.IsNullOrEmpty(updateProfileDto.Specialization)) doctor.Specialization = updateProfileDto.Specialization;
+                if (!string.IsNullOrEmpty(updateProfileDto.Education)) doctor.Education = updateProfileDto.Education;
+                if (!string.IsNullOrEmpty(updateProfileDto.Bio)) doctor.Bio = updateProfileDto.Bio;
+                if (!string.IsNullOrEmpty(updateProfileDto.Address)) doctor.Address = updateProfileDto.Address;
+                if (updateProfileDto.Age.HasValue) doctor.Age = updateProfileDto.Age.Value;
+                if (!string.IsNullOrEmpty(updateProfileDto.Email)) doctor.Email = updateProfileDto.Email;
 
                 if (updateProfileDto.ImgUrl != null)
                 {
-                    if (!string.IsNullOrEmpty(doctor.ImgUrl))
+                    var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", doctor.ImgUrl?.TrimStart('/') ?? "");
+                    if (!string.IsNullOrEmpty(doctor.ImgUrl) && System.IO.File.Exists(oldImagePath))
                     {
-                        var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", doctor.ImgUrl.TrimStart('/'));
-                        if (System.IO.File.Exists(oldImagePath))
-                        {
-                            System.IO.File.Delete(oldImagePath);
-                        }
+                        System.IO.File.Delete(oldImagePath);
                     }
+
                     var fileName = $"{Guid.NewGuid()}_{updateProfileDto.ImgUrl.FileName}";
                     var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/Doctor/", fileName);
 
+                    Directory.CreateDirectory(Path.GetDirectoryName(filePath) ?? throw new InvalidOperationException());
                     using (var stream = new FileStream(filePath, FileMode.Create))
                     {
                         updateProfileDto.ImgUrl.CopyTo(stream);
@@ -264,10 +244,10 @@ namespace Growell_API.Controllers
             }
             catch (Exception ex)
             {
-               
-                return StatusCode(500, "An unexpected error occurred: " + ex.Message);
+                return StatusCode(500, $"An unexpected error occurred: {ex.Message}");
             }
         }
+
 
         [Authorize]
         [HttpPut("change-password")]
@@ -296,38 +276,58 @@ namespace Growell_API.Controllers
         [HttpDelete("delete-account")]
         public IActionResult DeleteAccount()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var doctorId = int.Parse(userId);
-
-            var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == doctorId);
-
-            if (doctor == null)
-                return NotFound("Doctor not found.");
-
-            var tests = doctor.Tests.ToList();
-            foreach (var test in tests)
+            try
             {
-                testRepository.Delete(test);
-            }
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized("User ID not found in token.");
 
-            var testResults = doctor.TestResults.ToList();
-            foreach (var tr in testResults)
+                if (!int.TryParse(userId, out var doctorId))
+                    return BadRequest("Invalid User ID.");
+
+                var doctor = doctorRepository.GetOne(
+                    includeProps: new Expression<Func<Doctor, object>>[]
+                    {
+                d => d.Tests,
+                d => d.TestResults,
+                d => d.Questions
+                    },
+                    expression: d => d.DoctorID == doctorId
+                );
+
+                if (doctor == null)
+                    return NotFound("Doctor not found.");
+
+                var tests = doctor.Tests?.ToList() ?? new List<Test>();
+                foreach (var test in tests)
+                {
+                    testRepository.Delete(test);
+                }
+                var testResults = doctor.TestResults?.ToList() ?? new List<TestResult>();
+                foreach (var tr in testResults)
+                {
+                    testResultRepository.Delete(tr);
+                }
+
+                var questions = doctor.Questions?.ToList() ?? new List<Question>();
+                foreach (var q in questions)
+                {
+                    questionRepository.Delete(q);
+                }
+
+                doctorRepository.Delete(doctor);
+
+                doctorRepository.Commit();
+
+                return Ok("Account deleted successfully.");
+            }
+            catch (Exception ex)
             {
-                testResultRepository.Delete(tr);
+                Console.WriteLine($"Error: {ex.Message}");
+                return StatusCode(500, "An error occurred while deleting the account.");
             }
-
-            var questions = doctor.Questions.ToList();
-            foreach (var q in questions)
-            {
-                questionRepository.Delete(q);
-            }
-
-            doctorRepository.Delete(doctor);
-
-            doctorRepository.Commit();
-
-            return Ok("Account deleted successfully.");
         }
+
 
 
         private string GenerateJwtToken(Doctor doctor)

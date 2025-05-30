@@ -210,11 +210,9 @@ namespace Growell_API.Controllers
             }
         }
 
-
-
         [Authorize]
         [HttpPut("Edit/{id}")]
-        public IActionResult Edit(int id, [FromBody] Test test)
+        public IActionResult Edit(int id, [FromBody] Test updatedTest)
         {
             try
             {
@@ -236,12 +234,12 @@ namespace Growell_API.Controllers
                     return Forbid("You are not authorized to edit this test.");
                 }
 
-                existingTest.TestName = test.TestName;
-                existingTest.Description = test.Description;
-                existingTest.CategoryID = test.CategoryID;
-                existingTest.NumberOfQuestions = test.NumberOfQuestions;
-                existingTest.IsActive = test.IsActive;
-                existingTest.DoctorID = doctorId;  
+                if (!string.IsNullOrEmpty(updatedTest.TestName)) existingTest.TestName = updatedTest.TestName;
+                if (!string.IsNullOrEmpty(updatedTest.Description))existingTest.Description = updatedTest.Description;
+                if (updatedTest.CategoryID != 0)existingTest.CategoryID = updatedTest.CategoryID;
+                if (updatedTest.NumberOfQuestions > 0) existingTest.NumberOfQuestions = updatedTest.NumberOfQuestions;
+                if (updatedTest.IsActive) existingTest.IsActive = updatedTest.IsActive;
+
 
                 testRepository.Edit(existingTest);
                 testRepository.Commit();
@@ -253,6 +251,7 @@ namespace Growell_API.Controllers
                 return StatusCode(500, new { message = "An error occurred while updating the test", error = ex.Message });
             }
         }
+
 
         [Authorize]
         [HttpDelete("Delete/{id}")]
