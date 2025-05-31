@@ -130,12 +130,19 @@ namespace Growell_API.Controllers
             });
         }
 
-        private void SaveResult(string userId, int testId, int score )
+        private void SaveResult(string userId, int testId, int score)
         {
+            var test = testRepository.GetOne(expression: t => t.TestID == testId);
+            if (test == null)
+            {
+                throw new Exception("Test not found");
+            }
+
             var result = new TestResult
             {
                 UserID = userId,
                 TestID = testId,
+                DoctorID = test.DoctorID, 
                 Score = score,
                 TakenAt = DateTime.UtcNow
             };
@@ -144,20 +151,6 @@ namespace Growell_API.Controllers
             testResultRepository.Commit();
         }
 
-
-        //private void saveResult(string userId, int testId, int score)
-        //{
-        //    testResultRepository.Create(new TestResult
-        //    {
-        //        UserID = userId,
-        //        TestID = testId,
-        //        Score = score,
-        //        TakenAt = DateTime.Now,
-                
-
-        //    });
-        //    testResultRepository.Commit();
-        //}
 
 
 

@@ -183,70 +183,113 @@ namespace Growell_API.Controllers
             });
         }
 
-        [Authorize]
-        [HttpPut("update-profile")]
-        public IActionResult UpdateProfile([FromForm] UpdateProfileDto updateProfileDto)
+       [Authorize]
+[HttpPut("update-profile")]
+public async Task<IActionResult> UpdateProfile([FromForm] DoctorEditDTO updateProfileDto)
+{
+    try
+    {
+        // الحصول على معرف المستخدم
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(new { error = "Authorization error", message = "User ID is missing or invalid." });
+
+        if (!int.TryParse(userId, out var doctorId))
+            return BadRequest(new { error = "Validation error", message = "Invalid user ID format." });
+
+        // جلب الطبيب
+        var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == doctorId);
+        if (doctor == null)
+            return NotFound(new { error = "Not Found", message = "Doctor not found." });
+
+        // تحديث الحقول
+        if (!string.IsNullOrEmpty(updateProfileDto.FirstName)) doctor.FirstName = updateProfileDto.FirstName;
+        if (!string.IsNullOrEmpty(updateProfileDto.SecondName)) doctor.SecondName = updateProfileDto.SecondName;
+        if (!string.IsNullOrEmpty(updateProfileDto.LatestName)) doctor.LastName = updateProfileDto.LatestName;
+        if (!string.IsNullOrEmpty(updateProfileDto.PhoneNumber)) doctor.PhoneNumber = updateProfileDto.PhoneNumber;
+        if (!string.IsNullOrEmpty(updateProfileDto.Specialization)) doctor.Specialization = updateProfileDto.Specialization;
+        if (!string.IsNullOrEmpty(updateProfileDto.Education)) doctor.Education = updateProfileDto.Education;
+        if (!string.IsNullOrEmpty(updateProfileDto.Bio)) doctor.Bio = updateProfileDto.Bio;
+        if (!string.IsNullOrEmpty(updateProfileDto.Address)) doctor.Address = updateProfileDto.Address;
+        if (updateProfileDto.Age.HasValue) doctor.Age = updateProfileDto.Age.Value;
+
+        // معالجة الصورة
+        if (updateProfileDto.ImgUrl != null && updateProfileDto.ImgUrl.Length > 0)
         {
             try
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("User is not authorized.");
-
-                if (!int.TryParse(userId, out var doctorId))
-                    return BadRequest("Invalid user ID format.");
-
-                var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == doctorId);
-
-                if (doctor == null)
-                    return NotFound("Doctor not found.");
-
-                if (!string.IsNullOrEmpty(updateProfileDto.FirstName)) doctor.FirstName = updateProfileDto.FirstName;
-                if (!string.IsNullOrEmpty(updateProfileDto.SecondName)) doctor.SecondName = updateProfileDto.SecondName;
-                if (!string.IsNullOrEmpty(updateProfileDto.LastName)) doctor.LastName = updateProfileDto.LastName;
-                if (!string.IsNullOrEmpty(updateProfileDto.PhoneNumber)) doctor.PhoneNumber = updateProfileDto.PhoneNumber;
-                if (!string.IsNullOrEmpty(updateProfileDto.Specialization)) doctor.Specialization = updateProfileDto.Specialization;
-                if (!string.IsNullOrEmpty(updateProfileDto.Education)) doctor.Education = updateProfileDto.Education;
-                if (!string.IsNullOrEmpty(updateProfileDto.Bio)) doctor.Bio = updateProfileDto.Bio;
-                if (!string.IsNullOrEmpty(updateProfileDto.Address)) doctor.Address = updateProfileDto.Address;
-                if (updateProfileDto.Age.HasValue) doctor.Age = updateProfileDto.Age.Value;
-                if (!string.IsNullOrEmpty(updateProfileDto.Email)) doctor.Email = updateProfileDto.Email;
-
-                if (updateProfileDto.ImgUrl != null)
+                if (!string.IsNullOrEmpty(doctor.ImgUrl))
                 {
-                    var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", doctor.ImgUrl?.TrimStart('/') ?? "");
-                    if (!string.IsNullOrEmpty(doctor.ImgUrl) && System.IO.File.Exists(oldImagePath))
+                    var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", doctor.ImgUrl.TrimStart('/'));
+                    if (System.IO.File.Exists(oldFilePath))
                     {
-                        System.IO.File.Delete(oldImagePath);
+                        System.IO.File.Delete(oldFilePath);
                     }
-
-                    var fileName = $"{Guid.NewGuid()}_{updateProfileDto.ImgUrl.FileName}";
-                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/Doctor/", fileName);
-
-                    Directory.CreateDirectory(Path.GetDirectoryName(filePath) ?? throw new InvalidOperationException());
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        updateProfileDto.ImgUrl.CopyTo(stream);
-                    }
-
-                    doctor.ImgUrl = $"/images/Doctor/{fileName}";
                 }
 
-                doctorRepository.Edit(doctor);
-                doctorRepository.Commit();
-
-                return Ok("Profile updated successfully.");
-            }
-            catch (FormatException)
-            {
-                return BadRequest("Invalid user ID format.");
+                doctor.ImgUrl = await SaveDoctorImage(updateProfileDto.ImgUrl);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"An unexpected error occurred: {ex.Message}");
+                return BadRequest(new { error = "Image Upload Error", message = ex.Message });
             }
         }
+
+        // حفظ التعديلات
+        doctorRepository.Edit(doctor);
+        doctorRepository.Commit();
+
+        return Ok(new
+        {
+            message = "Profile updated successfully",
+            doctorData = new
+            {
+                doctor.FirstName,
+                doctor.SecondName,
+                doctor.LastName,
+                doctor.PhoneNumber,
+                doctor.Specialization,
+                doctor.Education,
+                doctor.Bio,
+                doctor.Address,
+                doctor.Age,
+                doctor.ImgUrl
+            }
+        });
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, new { error = "Internal Server Error", message = ex.Message });
+    }
+}
+
+private async Task<string> SaveDoctorImage(IFormFile imgFile)
+{
+    var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+    var extension = Path.GetExtension(imgFile.FileName).ToLower();
+
+    if (!allowedExtensions.Contains(extension))
+        throw new Exception("Invalid file type. Only .jpg, .jpeg, .png, and .gif are allowed.");
+
+    if (imgFile.Length > 5 * 1024 * 1024)
+        throw new Exception("File size exceeds 5MB.");
+
+    var fileName = $"{Guid.NewGuid()}{extension}";
+    var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "Doctor");
+
+    Directory.CreateDirectory(folderPath);
+
+    var filePath = Path.Combine(folderPath, fileName);
+
+    using (var stream = new FileStream(filePath, FileMode.Create))
+    {
+        await imgFile.CopyToAsync(stream);
+    }
+
+    return $"/images/Doctor/{fileName}";
+}
+
+
 
 
         [Authorize]

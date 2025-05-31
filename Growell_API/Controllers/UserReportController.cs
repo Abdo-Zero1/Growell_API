@@ -1,4 +1,5 @@
-﻿using DataAccess.Repository.IRepository;
+﻿using DataAccess.Repository;
+using DataAccess.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -37,46 +38,49 @@ namespace Growell_API.Controllers
             this.testRepository = testRepository;
             this.userManager = userManager;
         }
-
         [Authorize]
         [HttpGet("GetReport")]
         public IActionResult GetReport()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var email = User.FindFirstValue(ClaimTypes.Email); // جلب البريد الإلكتروني من التوكين
 
-            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int userIdFromToken))
+            if (string.IsNullOrEmpty(email))
             {
-                return Unauthorized(new { message = "Invalid token or UserID missing." });
+                return Unauthorized(new { message = "Invalid token or email missing." });
             }
 
             try
             {
-                // التحقق مما إذا كان المستخدم طبيبًا
-                var doctor = doctorRepository.GetOne(expression: d => d.UserID == userId);
+                // التحقق إذا كان المستخدم طبيبًا
+                var doctor = doctorRepository.GetOne(expression: d => d.Email == email);
 
-                IEnumerable<TestResult> testResults;
+                List<TestResult> testResults;
 
                 if (doctor != null)
                 {
-                    // المستخدم دكتور، إرجاع تقارير الأطفال المرتبطين به فقط
+                    // إذا كان المستخدم طبيبًا، استرجع كل التقارير المرتبطة به
                     testResults = testResultRepository.Get(expression: r => r.DoctorID == doctor.DoctorID).ToList();
                 }
                 else
                 {
-                    // المستخدم ليس دكتورًا، إرجاع تقاريره فقط
-                    testResults = testResultRepository.Get(expression: r => r.UserID == userId).ToList();
+                    // إذا كان المستخدم عاديًا، استرجع تقاريره فقط
+                    var user = userManager.Users.FirstOrDefault(u => u.Email == email);
+                    if (user == null)
+                    {
+                        return Unauthorized(new { message = "User not found." });
+                    }
+
+                    testResults = testResultRepository.Get(expression: r => r.UserID == user.Id).ToList();
                 }
 
                 if (!testResults.Any())
                 {
                     return NotFound(new
                     {
-                        messageEn = "No test results found for the user.",
-                        messageAr = "لا توجد نتائج اختبارات لهذا المستخدم."
+                        messageEn = "No test results found.",
+                        messageAr = "لا توجد نتائج اختبارات."
                     });
                 }
-
-                // تجهيز تقرير النتايج
                 var userIds = testResults.Select(r => r.UserID).Distinct().ToList();
                 var users = userManager.Users.Where(u => userIds.Contains(u.Id))
                                               .Select(u => new { u.Id, u.UserName, u.ProfilePicturePath })
@@ -96,13 +100,13 @@ namespace Growell_API.Controllers
 
                     return new
                     {
-                        UserName = user?.UserName,
-                        ProfilePicture = user?.ProfilePicturePath,
+                        username = user?.UserName,
+                        Photo= user?.ProfilePicturePath,
+                        test = test.TestName,
                         TestName = test?.TestName,
                         Score = r.Score,
                         TakenAt = r.TakenAt,
-                        CategoryName = category?.Name,
-                        DoctorName = doctorName,
+                        dctor= doctorName,
                         Percentage = percentage,
                         ClassificationEn = GetDelayClassificationEn(percentage),
                         ClassificationAr = GetDelayClassificationAr(percentage)
@@ -113,9 +117,11 @@ namespace Growell_API.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Error: {ex.Message}");
                 return StatusCode(500, new { message = "An error occurred while retrieving the report.", error = ex.Message });
             }
         }
+
 
 
         private string GetDelayClassificationEn(double percentage)

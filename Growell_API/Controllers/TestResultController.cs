@@ -11,7 +11,7 @@ namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    // [Authorize(Roles = $"{SD.AdminRole},{SD.DoctorRole}")]
+    [Authorize]
     public class TestResultController : ControllerBase
     {
         private readonly ITestResultRepository testResultRepository;
@@ -34,9 +34,10 @@ namespace Growell_API.Controllers
             this.userManager = userManager;
         }
 
-        [HttpGet("Get")]
-        public IActionResult Index()
+        [HttpGet("GetReports")]
+        public IActionResult GetReports()
         {
+            // Get user email from the token
             var email = User.FindFirstValue(ClaimTypes.Email);
 
             if (string.IsNullOrEmpty(email))
@@ -44,36 +45,45 @@ namespace Growell_API.Controllers
                 return Unauthorized(new { message = "Invalid token. Email not found." });
             }
 
-            var isAdmin = User.IsInRole(SD.AdminRole);
+            // Check if user is a doctor
+            var doctor = doctorRepository.GetOne(expression: d => d.Email == email);
 
             List<TestResult> testResults;
 
-            if (isAdmin)
+            if (doctor != null)
             {
-                testResults = testResultRepository.Get().ToList();
+                // User is a doctor, retrieve reports for all their patients
+                testResults = testResultRepository.Get(expression: r => r.DoctorID == doctor.DoctorID).ToList();
             }
             else
             {
-                var doctor = doctorRepository.GetOne(expression: d => d.Email == email);
+                // User is not a doctor, retrieve their own test results
+                var user = userManager.Users.FirstOrDefault(u => u.Email == email);
 
-                if (doctor == null)
+                if (user == null)
                 {
-                    return Unauthorized(new { message = "Doctor not found with the given email." });
+                    return Unauthorized(new { message = "User not found." });
                 }
 
-                testResults = testResultRepository.Get(expression: r => r.DoctorID == doctor.DoctorID).ToList();
+                testResults = testResultRepository.Get(expression: r => r.UserID == user.Id).ToList();
             }
 
+            // Check if there are any results
+            if (!testResults.Any())
+            {
+                return NotFound(new
+                {
+                    messageEn = "No test results found.",
+                    messageAr = "لا توجد نتائج اختبارات."
+                });
+            }
+
+            // Generate the report
             var report = testResults.Select(tr =>
             {
                 var test = testRepository.GetOne(expression: t => t.TestID == tr.TestID);
                 var category = categoryRepository.GetOne(expression: c => c.CategoryID == test.CategoryID);
-                var user = userManager.FindByIdAsync(tr.UserID).Result;
-
-                var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == test.DoctorID);
-                var doctorName = doctor != null
-                    ? $"{doctor.FirstName ?? "غير متوفر"} {doctor.SecondName ?? ""} {doctor.LastName ?? ""}".Trim()
-                    : "Doctor not found";
+                var user = userManager.Users.FirstOrDefault(u => u.Id == tr.UserID);
 
                 return new
                 {
@@ -81,9 +91,8 @@ namespace Growell_API.Controllers
                     Score = tr.Score,
                     TakenAt = tr.TakenAt,
                     UserName = user?.UserName,
-                    DoctorName = doctorName,
                     CategoryName = category?.Name,
-                    Image = user?.ProfilePicturePath
+                    ProfilePicture = user?.ProfilePicturePath
                 };
             }).ToList();
 
