@@ -42,7 +42,7 @@ namespace Growell_API.Controllers
         [HttpGet("GetReport")]
         public IActionResult GetReport()
         {
-            var email = User.FindFirstValue(ClaimTypes.Email); 
+            var email = User.FindFirstValue(ClaimTypes.Email);
 
             if (string.IsNullOrEmpty(email))
             {
@@ -52,7 +52,6 @@ namespace Growell_API.Controllers
             try
             {
                 var doctor = doctorRepository.GetOne(expression: d => d.Email == email);
-
                 List<TestResult> testResults;
 
                 if (doctor != null)
@@ -68,6 +67,16 @@ namespace Growell_API.Controllers
                     }
 
                     testResults = testResultRepository.Get(expression: r => r.UserID == user.Id).ToList();
+
+                    if (!testResults.Any())
+                    {
+                        return Ok(new
+                        {
+                            message = "No test results found",
+                            username = user.UserName,
+                            Photo = user.ProfilePicturePath
+                        });
+                    }
                 }
 
                 if (!testResults.Any())
@@ -75,9 +84,9 @@ namespace Growell_API.Controllers
                     return NotFound(new
                     {
                         messageEn = "No test results found.",
-                        messageAr = "لا توجد نتائج اختبارات."
                     });
                 }
+
                 var userIds = testResults.Select(r => r.UserID).Distinct().ToList();
                 var users = userManager.Users.Where(u => userIds.Contains(u.Id))
                                               .Select(u => new { u.Id, u.UserName, u.ProfilePicturePath })
@@ -91,20 +100,20 @@ namespace Growell_API.Controllers
                     double percentage = totalQuestions > 0 ? (double)r.Score / totalQuestions * 100 : 0;
 
                     var user = users.FirstOrDefault(u => u.Id == r.UserID);
-                    var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == r.DoctorID);
-                    var doctorName = doctor != null
-                        ? $"{doctor.FirstName ?? "غير متوفر"} {doctor.SecondName ?? ""} {doctor.LastName ?? ""}".Trim()
+                    var doctorInfo = doctorRepository.GetOne(expression: d => d.DoctorID == r.DoctorID);
+                    var doctorName = doctorInfo != null
+                        ? $"{doctorInfo.FirstName ?? "غير متوفر"} {doctorInfo.SecondName ?? ""} {doctorInfo.LastName ?? ""}".Trim()
                         : "Doctor not found";
 
                     return new
                     {
                         username = user?.UserName,
-                        Photo= user?.ProfilePicturePath,
+                        Photo = user?.ProfilePicturePath,
                         test = test.TestName,
                         TestName = test?.TestName,
                         Score = r.Score,
                         TakenAt = r.TakenAt,
-                        doctor= doctorName,
+                        doctor = doctorName,
                         Percentage = percentage,
                         ClassificationEn = GetDelayClassificationEn(percentage),
                         ClassificationAr = GetDelayClassificationAr(percentage)
@@ -119,6 +128,7 @@ namespace Growell_API.Controllers
                 return StatusCode(500, new { message = "An error occurred while retrieving the report.", error = ex.Message });
             }
         }
+
 
 
 
