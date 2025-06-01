@@ -1,5 +1,6 @@
 ﻿using DataAccess.Repository;
 using DataAccess.Repository.IRepository;
+using Growell_API.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -104,10 +105,10 @@ namespace Growell_API.Controllers
 
         [Authorize]
         [HttpPost("Create")]
-        public IActionResult Create([FromBody] Test test)
+        public IActionResult Create([FromBody] CreateTestDTO test)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return BadRequest(new { message = "Validation failed.", errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage) });
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int doctorId))
@@ -115,31 +116,37 @@ namespace Growell_API.Controllers
                 return Unauthorized(new { message = "Invalid token or DoctorID is missing." });
             }
 
-            test.DoctorID = doctorId;
-
-            if (test.CategoryID == 0)
-                return BadRequest(new { message = "CategoryID is required." });
-
             var doctor = doctorRepository.GetOne(null, d => d.DoctorID == doctorId);
             if (doctor == null)
-                return BadRequest(new { message = "Doctor not found." });
+                return NotFound(new { message = "Doctor not found." });
 
             var category = categoryRepository.GetOne(null, c => c.CategoryID == test.CategoryID);
             if (category == null)
-                return BadRequest(new { message = "Category not found." });
+                return NotFound(new { message = "Category not found." });
 
             try
             {
-                testRepository.Create(test);
+                var newTest = new Test
+                {
+                    TestName = test.TestName,
+                    Description = test.Description,
+                    CategoryID = test.CategoryID,
+                    DoctorID = doctorId,
+                    NumberOfQuestions = test.NumberOfQuestions,
+                    IsActive = test.IsActive,
+                };
+
+                testRepository.Create(newTest);
                 testRepository.Commit();
 
-                return Ok(new { message = "Test created successfully", testId = test.TestID });
+                return Ok(new { message = "Test created successfully.", testId = newTest.TestID });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while creating the test", error = ex.Message });
+                return StatusCode(500, new { message = "An error occurred while creating the test.", error = ex.Message });
             }
         }
+
 
         [Authorize]
         [HttpGet("GetById/{testId}")]
@@ -201,8 +208,17 @@ namespace Growell_API.Controllers
 
         [Authorize]
         [HttpPut("Edit/{id}")]
-        public IActionResult Edit(int id, [FromBody] Test updatedTest)
+        public IActionResult Edit(int id, [FromBody] EditTestDTO updatedTest)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new
+                {
+                    message = "Validation failed.",
+                    errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)
+                });
+            }
+
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -212,34 +228,42 @@ namespace Growell_API.Controllers
                 }
 
                 var existingTest = testRepository.GetOne(expression: t => t.TestID == id);
-
                 if (existingTest == null)
                 {
-                    return NotFound(new { message = "Test not found" });
+                    return NotFound(new { message = "Test not found." });
                 }
 
                 if (existingTest.DoctorID != doctorId)
                 {
-                    return Forbid("You are not authorized to edit this test.");
+                    return Forbid("You are not authorized to edit this test." );
+                }
+
+                if (updatedTest.CategoryID != 0)
+                {
+                    var category = categoryRepository.GetOne(null, c => c.CategoryID == updatedTest.CategoryID);
+                    if (category == null)
+                    {
+                        return NotFound(new { message = "Category not found." });
+                    }
+                    existingTest.CategoryID = updatedTest.CategoryID;
                 }
 
                 if (!string.IsNullOrEmpty(updatedTest.TestName)) existingTest.TestName = updatedTest.TestName;
-                if (!string.IsNullOrEmpty(updatedTest.Description))existingTest.Description = updatedTest.Description;
-                if (updatedTest.CategoryID != 0)existingTest.CategoryID = updatedTest.CategoryID;
+                if (!string.IsNullOrEmpty(updatedTest.Description)) existingTest.Description = updatedTest.Description;
                 if (updatedTest.NumberOfQuestions > 0) existingTest.NumberOfQuestions = updatedTest.NumberOfQuestions;
-                if (updatedTest.IsActive) existingTest.IsActive = updatedTest.IsActive;
-
+                existingTest.IsActive = updatedTest.IsActive;
 
                 testRepository.Edit(existingTest);
                 testRepository.Commit();
 
-                return Ok(new { message = "Test updated successfully", testId = existingTest.TestID });
+                return Ok(new { message = "Test updated successfully.", testId = existingTest.TestID });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while updating the test", error = ex.Message });
+                return StatusCode(500, new { message = "An error occurred while updating the test.", error = ex.Message });
             }
         }
+
 
 
         [Authorize]

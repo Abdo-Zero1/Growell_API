@@ -14,31 +14,24 @@ namespace Models
     {
         public int QuestionID { get; set; }
 
-        [Required(ErrorMessage = "Question text is required.")]
-        [StringLength(500, ErrorMessage = "Question text can't exceed 500 characters.")]
+       
         public string QuestionText { get; set; }
 
-        [Required(ErrorMessage = "Answer option 1 is required.")]
-        [StringLength(200, ErrorMessage = "Answer option can't exceed 200 characters.")]
+       
         public string AnswerOption1 { get; set; }
 
-        [Required(ErrorMessage = "Answer option 2 is required.")]
-        [StringLength(200, ErrorMessage = "Answer option can't exceed 200 characters.")]
+       
         public string AnswerOption2 { get; set; }
 
-        [Required(ErrorMessage = "Answer option 3 is required.")]
-        [StringLength(200, ErrorMessage = "Answer option can't exceed 200 characters.")]
+        
         public string AnswerOption3 { get; set; }
 
-        [Required(ErrorMessage = "Answer option 4 is required.")]
-        [StringLength(200, ErrorMessage = "Answer option can't exceed 200 characters.")]
+       
         public string AnswerOption4 { get; set; }
 
-        [Required(ErrorMessage = "Correct answer is required.")]
-        [StringLength(200, ErrorMessage = "Correct answer can't exceed 200 characters.")]
+       
         public string CorrectAnswer { get; set; }
 
-        [Range(1, int.MaxValue, ErrorMessage = "Order number must be a positive value.")]
         public int OrderNumber { get; set; }
 
         public int CreatedBy { get; set; }

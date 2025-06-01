@@ -1,5 +1,6 @@
 ﻿using DataAccess.Repository;
 using DataAccess.Repository.IRepository;
+using Growell_API.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -101,13 +102,13 @@ namespace Growell_API.Controllers
 
         [Authorize]
         [HttpPost("Create")]
-        public IActionResult Create([FromBody] Question question)
+        public IActionResult Create([FromBody] CreateQuestionDTO questionDTO)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(new
                 {
-                    message = "Invalid data.",
+                    message = "Validation failed.",
                     errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))
                 });
             }
@@ -117,7 +118,7 @@ namespace Growell_API.Controllers
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int doctorId))
                 {
-                    return Unauthorized(new { message = "Invalid token or DoctorID missing." });
+                    return Unauthorized(new { message = "Invalid token or DoctorID is missing." });
                 }
 
                 var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == doctorId);
@@ -126,31 +127,25 @@ namespace Growell_API.Controllers
                     return NotFound(new { message = "Doctor not found." });
                 }
 
-                var relatedTests = testRepository.Get(expression: t => t.DoctorID == doctorId).ToList();
-                if (!relatedTests.Any())
-                {
-                    return NotFound(new
-                    {
-                        message = "No tests found for the current doctor. Please create a test before adding questions.",
-                        Doctor = new
-                        {
-                            doctor.DoctorID,
-                            doctor.FirstName,
-                            doctor.LastName,
-                            doctor.Bio,
-                            doctor.ImgUrl
-                        }
-                    });
-                }
-
-                var relatedTest = relatedTests.FirstOrDefault(t => t.TestID == question.TestID);
-                if (relatedTest == null)
+                var test = testRepository.GetOne(expression: t => t.TestID == questionDTO.TestID && t.DoctorID == doctorId);
+                if (test == null)
                 {
                     return NotFound(new { message = "The associated test does not exist or does not belong to the current doctor." });
                 }
 
-                question.DoctorID = doctorId;
-                question.CreatedAt = DateTime.Now;
+                var question = new Question
+                {
+                    QuestionText = questionDTO.QuestionText,
+                    AnswerOption1 = questionDTO.AnswerOption1,
+                    AnswerOption2 = questionDTO.AnswerOption2,
+                    AnswerOption3 = questionDTO.AnswerOption3,
+                    AnswerOption4 = questionDTO.AnswerOption4,
+                    CorrectAnswer = questionDTO.CorrectAnswer,
+                    OrderNumber = questionDTO.OrderNumber,
+                    TestID = questionDTO.TestID,
+                    DoctorID = doctorId,
+                    CreatedAt = DateTime.UtcNow
+                };
 
                 questionRepository.Create(question);
                 questionRepository.Commit();
@@ -170,6 +165,7 @@ namespace Growell_API.Controllers
                 });
             }
         }
+
 
 
 
@@ -226,7 +222,7 @@ namespace Growell_API.Controllers
         }
         [Authorize]
         [HttpPut("Edit/{id}")]
-        public IActionResult Edit(int id, [FromBody] Question updatedQuestion)
+        public IActionResult Edit(int id, [FromBody] EditQuestionDTO updatedQuestion)
         {
             if (!ModelState.IsValid)
             {
@@ -245,40 +241,60 @@ namespace Growell_API.Controllers
 
             try
             {
-                var oldQuestion = questionRepository.GetOne( expression: q => q.QuestionID == id && q.DoctorID == doctorIdFromToken);
+                var oldQuestion = questionRepository.GetOne(expression: q => q.QuestionID == id && q.DoctorID == doctorIdFromToken);
                 if (oldQuestion == null)
                 {
                     return NotFound(new { message = "Question not found or you don't have permission to edit it." });
                 }
 
-                var doctorExists = doctorRepository.GetOne(expression: d => d.DoctorID == doctorIdFromToken);
-                if (doctorExists == null)
+                if (doctorRepository.GetOne(expression: d => d.DoctorID == doctorIdFromToken) == null)
                 {
                     return NotFound(new { message = "Doctor associated with token does not exist." });
                 }
 
-                if (!string.IsNullOrEmpty(updatedQuestion.QuestionText)) oldQuestion.QuestionText = updatedQuestion.QuestionText;
-                if (!string.IsNullOrEmpty(updatedQuestion.AnswerOption1)) oldQuestion.AnswerOption1 = updatedQuestion.AnswerOption1;
-                if (!string.IsNullOrEmpty(updatedQuestion.AnswerOption2)) oldQuestion.AnswerOption2 = updatedQuestion.AnswerOption2;
-                if (!string.IsNullOrEmpty(updatedQuestion.AnswerOption3)) oldQuestion.AnswerOption3 = updatedQuestion.AnswerOption3;
-                if (!string.IsNullOrEmpty(updatedQuestion.AnswerOption4))oldQuestion.AnswerOption4 = updatedQuestion.AnswerOption4;
-                if (!string.IsNullOrEmpty(updatedQuestion.CorrectAnswer)) oldQuestion.CorrectAnswer = updatedQuestion.CorrectAnswer;
-                if (updatedQuestion.OrderNumber > 0) oldQuestion.OrderNumber = updatedQuestion.OrderNumber;
-                if (updatedQuestion.TestID > 0) oldQuestion.TestID = updatedQuestion.TestID;
 
-                oldQuestion.CreatedBy = doctorIdFromToken; 
-                oldQuestion.CreatedAt = DateTime.Now;     
+                oldQuestion.QuestionText = !string.IsNullOrEmpty(updatedQuestion.QuestionText) ? updatedQuestion.QuestionText : oldQuestion.QuestionText;
+                oldQuestion.AnswerOption1 = !string.IsNullOrEmpty(updatedQuestion.AnswerOption1) ? updatedQuestion.AnswerOption1 : oldQuestion.AnswerOption1;
+                oldQuestion.AnswerOption2 = !string.IsNullOrEmpty(updatedQuestion.AnswerOption2) ? updatedQuestion.AnswerOption2 : oldQuestion.AnswerOption2;
+                oldQuestion.AnswerOption3 = !string.IsNullOrEmpty(updatedQuestion.AnswerOption3) ? updatedQuestion.AnswerOption3 : oldQuestion.AnswerOption3;
+                oldQuestion.AnswerOption4 = !string.IsNullOrEmpty(updatedQuestion.AnswerOption4) ? updatedQuestion.AnswerOption4 : oldQuestion.AnswerOption4;
+                oldQuestion.CorrectAnswer = !string.IsNullOrEmpty(updatedQuestion.CorrectAnswer) ? updatedQuestion.CorrectAnswer : oldQuestion.CorrectAnswer;
+                oldQuestion.OrderNumber = updatedQuestion.OrderNumber.HasValue && updatedQuestion.OrderNumber > 0? updatedQuestion.OrderNumber.Value: oldQuestion.OrderNumber;
+                oldQuestion.TestID = updatedQuestion.TestID.HasValue && updatedQuestion.TestID > 0? updatedQuestion.TestID.Value : oldQuestion.TestID;
+
+                oldQuestion.CreatedBy = doctorIdFromToken;
+                oldQuestion.CreatedAt = DateTime.Now;
 
                 questionRepository.Edit(oldQuestion);
                 questionRepository.Commit();
 
-                return Ok(new { message = "Question updated successfully.", question = oldQuestion });
+                return Ok(new
+                {
+                    message = "Question updated successfully.",
+                    question = new
+                    {
+                        oldQuestion.QuestionID,
+                        oldQuestion.QuestionText,
+                        oldQuestion.AnswerOption1,
+                        oldQuestion.AnswerOption2,
+                        oldQuestion.AnswerOption3,
+                        oldQuestion.AnswerOption4,
+                        oldQuestion.CorrectAnswer,
+                        oldQuestion.OrderNumber,
+                        oldQuestion.TestID
+                    }
+                });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while updating the question.", error = ex.Message });
+                return StatusCode(500, new
+                {
+                    message = "An error occurred while updating the question.",
+                    error = ex.Message
+                });
             }
         }
+
 
 
 
