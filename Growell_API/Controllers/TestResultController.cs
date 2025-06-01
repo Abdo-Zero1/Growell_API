@@ -37,7 +37,6 @@ namespace Growell_API.Controllers
         [HttpGet("GetReports")]
         public IActionResult GetReports()
         {
-            // Get user email from the token
             var email = User.FindFirstValue(ClaimTypes.Email);
 
             if (string.IsNullOrEmpty(email))
@@ -45,19 +44,16 @@ namespace Growell_API.Controllers
                 return Unauthorized(new { message = "Invalid token. Email not found." });
             }
 
-            // Check if user is a doctor
             var doctor = doctorRepository.GetOne(expression: d => d.Email == email);
 
             List<TestResult> testResults;
 
             if (doctor != null)
             {
-                // User is a doctor, retrieve reports for all their patients
                 testResults = testResultRepository.Get(expression: r => r.DoctorID == doctor.DoctorID).ToList();
             }
             else
             {
-                // User is not a doctor, retrieve their own test results
                 var user = userManager.Users.FirstOrDefault(u => u.Email == email);
 
                 if (user == null)
@@ -68,7 +64,6 @@ namespace Growell_API.Controllers
                 testResults = testResultRepository.Get(expression: r => r.UserID == user.Id).ToList();
             }
 
-            // Check if there are any results
             if (!testResults.Any())
             {
                 return NotFound(new
@@ -78,7 +73,6 @@ namespace Growell_API.Controllers
                 });
             }
 
-            // Generate the report
             var report = testResults.Select(tr =>
             {
                 var test = testRepository.GetOne(expression: t => t.TestID == tr.TestID);

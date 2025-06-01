@@ -42,7 +42,7 @@ namespace Growell_API.Controllers
         [HttpGet("GetReport")]
         public IActionResult GetReport()
         {
-            var email = User.FindFirstValue(ClaimTypes.Email); // جلب البريد الإلكتروني من التوكين
+            var email = User.FindFirstValue(ClaimTypes.Email); 
 
             if (string.IsNullOrEmpty(email))
             {
@@ -51,19 +51,16 @@ namespace Growell_API.Controllers
 
             try
             {
-                // التحقق إذا كان المستخدم طبيبًا
                 var doctor = doctorRepository.GetOne(expression: d => d.Email == email);
 
                 List<TestResult> testResults;
 
                 if (doctor != null)
                 {
-                    // إذا كان المستخدم طبيبًا، استرجع كل التقارير المرتبطة به
                     testResults = testResultRepository.Get(expression: r => r.DoctorID == doctor.DoctorID).ToList();
                 }
                 else
                 {
-                    // إذا كان المستخدم عاديًا، استرجع تقاريره فقط
                     var user = userManager.Users.FirstOrDefault(u => u.Email == email);
                     if (user == null)
                     {
@@ -94,6 +91,7 @@ namespace Growell_API.Controllers
                     double percentage = totalQuestions > 0 ? (double)r.Score / totalQuestions * 100 : 0;
 
                     var user = users.FirstOrDefault(u => u.Id == r.UserID);
+                    var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == r.DoctorID);
                     var doctorName = doctor != null
                         ? $"{doctor.FirstName ?? "غير متوفر"} {doctor.SecondName ?? ""} {doctor.LastName ?? ""}".Trim()
                         : "Doctor not found";
@@ -106,7 +104,7 @@ namespace Growell_API.Controllers
                         TestName = test?.TestName,
                         Score = r.Score,
                         TakenAt = r.TakenAt,
-                        dctor= doctorName,
+                        doctor= doctorName,
                         Percentage = percentage,
                         ClassificationEn = GetDelayClassificationEn(percentage),
                         ClassificationAr = GetDelayClassificationAr(percentage)

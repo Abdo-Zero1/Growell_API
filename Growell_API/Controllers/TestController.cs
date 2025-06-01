@@ -176,18 +176,7 @@ namespace Growell_API.Controllers
                     NumberOfQuestions = test.Questions?.Count ?? 0,
                     IsActive = test.IsActive,
                     CategoryID = test.CategoryID,
-                    //Questions = test.Questions?.Select(q => new
-                    //{
-                    //    q.QuestionID,
-                    //    q.QuestionText,
-                    //    q.AnswerOption1,
-                    //    q.AnswerOption2,
-                    //    q.AnswerOption3,
-                    //    q.AnswerOption4,
-                    //    q.CorrectAnswer,
-                    //    q.OrderNumber,
-                    //    q.CreatedAt
-                    //}),
+                   
                     Doctor = new
                     {
                         doctor.DoctorID,
