@@ -45,6 +45,5 @@ public class DoctorEditDTO
     [MaxLength(200, ErrorMessage = "Address cannot exceed 200 characters.")]
     public string? Address { get; set; }
 
-    [FileExtensions(Extensions = "jpg,jpeg,png,gif", ErrorMessage = "Only .jpg, .jpeg, .png, or .gif files are allowed.")]
     public IFormFile? ImgUrl { get; set; }
 }

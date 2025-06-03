@@ -189,7 +189,6 @@ public async Task<IActionResult> UpdateProfile([FromForm] DoctorEditDTO updatePr
 {
     try
     {
-        // الحصول على معرف المستخدم
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
             return Unauthorized(new { error = "Authorization error", message = "User ID is missing or invalid." });
@@ -197,12 +196,10 @@ public async Task<IActionResult> UpdateProfile([FromForm] DoctorEditDTO updatePr
         if (!int.TryParse(userId, out var doctorId))
             return BadRequest(new { error = "Validation error", message = "Invalid user ID format." });
 
-        // جلب الطبيب
         var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == doctorId);
         if (doctor == null)
             return NotFound(new { error = "Not Found", message = "Doctor not found." });
 
-        // تحديث الحقول
         if (!string.IsNullOrEmpty(updateProfileDto.FirstName)) doctor.FirstName = updateProfileDto.FirstName;
         if (!string.IsNullOrEmpty(updateProfileDto.SecondName)) doctor.SecondName = updateProfileDto.SecondName;
         if (!string.IsNullOrEmpty(updateProfileDto.LatestName)) doctor.LastName = updateProfileDto.LatestName;
@@ -213,7 +210,6 @@ public async Task<IActionResult> UpdateProfile([FromForm] DoctorEditDTO updatePr
         if (!string.IsNullOrEmpty(updateProfileDto.Address)) doctor.Address = updateProfileDto.Address;
         if (updateProfileDto.Age.HasValue) doctor.Age = updateProfileDto.Age.Value;
 
-        // معالجة الصورة
         if (updateProfileDto.ImgUrl != null && updateProfileDto.ImgUrl.Length > 0)
         {
             try
@@ -235,7 +231,6 @@ public async Task<IActionResult> UpdateProfile([FromForm] DoctorEditDTO updatePr
             }
         }
 
-        // حفظ التعديلات
         doctorRepository.Edit(doctor);
         doctorRepository.Commit();
 

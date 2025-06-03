@@ -22,7 +22,6 @@ namespace Growell_API.DTOs
         public string Email { get; set; }
 
         [Required(ErrorMessage = "Gender is required.")]
-        [RegularExpression("Male|Female|Other", ErrorMessage = "Gender must be Male, Female, or Other.")]
         public string Gender { get; set; }
 
         [StringLength(500, ErrorMessage = "Bio cannot exceed 500 characters.")]
@@ -62,7 +61,6 @@ namespace Growell_API.DTOs
         [StringLength(300, ErrorMessage = "Education details cannot exceed 300 characters.")]
         public string? Education { get; set; }
 
-        [FileExtensions(Extensions = "jpg,jpeg,png,gif", ErrorMessage = "Only .jpg, .jpeg, .png, or .gif files are allowed.")]
         public IFormFile? ImgUrl { get; set; }
 
         [Required(ErrorMessage = "Password is required.")]
