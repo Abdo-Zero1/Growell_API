@@ -41,7 +41,7 @@ namespace Growell_API.Controllers
                 return BadRequest("Video data and image are required.");
 
             string fileName = Guid.NewGuid().ToString() + Path.GetExtension(videoDTO.VideoImage.FileName);
-            string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "images", "videos");
+            string folderPath = Path.Combine(Directory.GetCurrentDirectory(),"wwwroot", "images", "videos");
             Directory.CreateDirectory(folderPath);
             string filePath = Path.Combine(folderPath, fileName);
 
@@ -79,54 +79,85 @@ namespace Growell_API.Controllers
             {
                 return NotFound("Video Event not found");
             }
-            return Ok(videoEvent);
+            var response = new
+            {
+                videoEvent.VideoEventId,
+                videoEvent.VideoTitle,
+                videoEvent.Description,
+                videoEvent.AboutOfVideo,
+                videoEvent.VideoUrl,
+            };
+            return Ok(response);
 
         }
-        //[HttpPut("{id}")]
-        //public IActionResult Put(int id, [FromForm] VideoDTO videoDTO)
-        //{
-        //    if (id != videoDTO.VideoEvent.VideoEventId)
-        //    {
-        //        return BadRequest("Invalid Video Event ID.");
-        //    }
+        [HttpPut]
+        [Route("EditVideoEvent/{id}")]
+        public IActionResult Edit(int id, [FromForm] UpdateVideoDTO videoDTO)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-        //    var videoEvent = videoEventRepository.GetOne(expression: e => e.VideoEventId == id);
-        //    if (videoEvent == null)
-        //    {
-        //        return NotFound("Video Event not found.");
-        //    }
+            var existingVideo = videoEventRepository.GetOne(expression: b => b.VideoEventId == id);
+            if (existingVideo == null)
+                return NotFound("The video with the specified ID does not exist.");
 
-        //    //videoEvent.TestResult = videoDTO.VideoEvent.TestResult;
-        //    videoEvent.VideoTitle = videoDTO.VideoEvent.VideoTitle;
-        //    videoEvent.Description = videoDTO.VideoEvent.Description;
+            if (!string.IsNullOrWhiteSpace(videoDTO.VideoTitle))
+                existingVideo.VideoTitle = videoDTO.VideoTitle;
 
-        //    if (videoDTO.VideoImage != null && videoDTO.VideoImage.Length > 0)
-        //    {
-        //        if (!string.IsNullOrEmpty(videoEvent.VideoImagePath))
-        //        {
-        //            var oldVideoPath = Path.Combine(Directory.GetCurrentDirectory(), "images","Video", videoEvent.VideoImagePath);
-        //            if (System.IO.File.Exists(oldVideoPath))
-        //            {
-        //                System.IO.File.Delete(oldVideoPath);
-        //            }
-        //        }
+            if (!string.IsNullOrWhiteSpace(videoDTO.Description))
+                existingVideo.Description = videoDTO.Description;
 
-        //        var fileName = Guid.NewGuid().ToString() + Path.GetExtension(videoDTO.VideoImage.FileName);
-        //        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "images","Video", fileName);
+            if (!string.IsNullOrWhiteSpace(videoDTO.AboutOfVideo))
+                existingVideo.AboutOfVideo = videoDTO.AboutOfVideo;
 
-        //        using (var stream = new FileStream(filePath, FileMode.Create))
-        //        {
-        //             videoDTO.VideoImage.CopyToAsync(stream);
-        //        }
+            if (!string.IsNullOrWhiteSpace(videoDTO.VideoUrl))
+                existingVideo.VideoUrl = videoDTO.VideoUrl;
 
-        //        videoEvent.VideoImagePath = fileName;
-        //    }
+            if (videoDTO.VideoImage != null && videoDTO.VideoImage.Length > 0)
+            {
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+                var fileExtension = Path.GetExtension(videoDTO.VideoImage.FileName).ToLower();
 
-        //       videoEventRepository.Edit(videoEvent);
-        //       videoEventRepository.Commit();
+                if (!allowedExtensions.Contains(fileExtension))
+                    return BadRequest("Only JPG and PNG image files are allowed.");
 
-        //    return Ok(videoEvent);
-        //}
+                string fileName = $"{Guid.NewGuid()}{fileExtension}";
+                string folderPath = Path.Combine("wwwroot", "images", "Videos");
+                string filePath = Path.Combine(Directory.GetCurrentDirectory(), folderPath, fileName);
+
+                Directory.CreateDirectory(folderPath);
+
+                try
+                {
+                    if (!string.IsNullOrEmpty(existingVideo.VideoImagePath))
+                    {
+                        string oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", existingVideo.VideoImagePath.TrimStart('/'));
+                        if (System.IO.File.Exists(oldFilePath))
+                        {
+                            System.IO.File.Delete(oldFilePath);
+                        }
+                    }
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        videoDTO.VideoImage.CopyTo(stream);
+                    }
+
+                    existingVideo.VideoImagePath = $"/images/Videos/{fileName}";
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, $"Internal server error: {ex.Message}");
+                }
+            }
+
+            videoEventRepository.Edit(existingVideo);
+            videoEventRepository.Commit();
+
+            return Ok(existingVideo);
+        }
+
+
 
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)

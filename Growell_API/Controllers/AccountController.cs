@@ -206,7 +206,6 @@ namespace Growell_API.Controllers
             return Ok(userData);
         }
 
-
         [HttpPost("Profile/Update")]
         [Authorize]
         public async Task<IActionResult> UpdateProfile([FromForm] ProfileDTO profileDTO)
@@ -219,30 +218,18 @@ namespace Growell_API.Controllers
             if (user == null)
                 return NotFound(new { error = "Not Found", message = "The requested user does not exist." });
 
-            if (!string.IsNullOrEmpty(profileDTO.UserName))
-            {
-                user.UserName = profileDTO.UserName;
-            }
+            if (!string.IsNullOrEmpty(profileDTO.UserName))user.UserName = profileDTO.UserName;
+            if (!string.IsNullOrEmpty(profileDTO.Email))user.Email = profileDTO.Email;
+            if (!string.IsNullOrEmpty(profileDTO.PhoneNumber))user.PhoneNumber = profileDTO.PhoneNumber;
+            if (!string.IsNullOrEmpty(profileDTO.Adderss)) user.Adderss = profileDTO.Adderss;
+            
 
-            if (!string.IsNullOrEmpty(profileDTO.Email))
-            {
-                user.Email = profileDTO.Email;
-            }
-
-            if (!string.IsNullOrEmpty(profileDTO.PhoneNumber))
-            {
-                user.PhoneNumber = profileDTO.PhoneNumber;
-            }
-
-            if (!string.IsNullOrEmpty(profileDTO.Adderss))
-            {
-                user.Adderss = profileDTO.Adderss;
-            }
             if (profileDTO.ProfilePicture != null && profileDTO.ProfilePicture.Length > 0)
             {
                 try
                 {
-                    if (!string.IsNullOrEmpty(user.ProfilePicturePath))
+                    if (!string.IsNullOrEmpty(user.ProfilePicturePath) &&
+                        !user.ProfilePicturePath.Equals("/images/Profile/images.jpg", StringComparison.OrdinalIgnoreCase))
                     {
                         var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", user.ProfilePicturePath.TrimStart('/'));
                         if (System.IO.File.Exists(oldFilePath))
@@ -258,7 +245,6 @@ namespace Growell_API.Controllers
                     return BadRequest(new { error = "Image Upload Error", message = ex.Message });
                 }
             }
-
 
             var result = await userManager.UpdateAsync(user);
 
@@ -284,7 +270,6 @@ namespace Growell_API.Controllers
             }
         }
 
-
         private async Task<string> SaveProfilePicture(IFormFile profilePicture)
         {
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
@@ -308,8 +293,9 @@ namespace Growell_API.Controllers
                 await profilePicture.CopyToAsync(stream);
             }
 
-            return $"/Images/Profile/{fileName}";
+            return $"/images/Profile/{fileName}";
         }
+
 
 
         [HttpDelete("DeleteAccount")]

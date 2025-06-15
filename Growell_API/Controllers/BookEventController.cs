@@ -41,7 +41,7 @@ namespace Growell_API.Controllers
                 return BadRequest("Book data and image are required.");
 
             string fileName = Guid.NewGuid().ToString() + Path.GetExtension(bookDTO.BookImage.FileName);
-            string FolderPath=Path.Combine(Directory.GetCurrentDirectory(), "images", "Books");
+            string FolderPath=Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "Books");
             Directory.CreateDirectory(FolderPath);
             string filePath= Path.Combine(FolderPath, fileName);
 
@@ -75,13 +75,21 @@ namespace Growell_API.Controllers
             {
                 return NotFound("BookEvent not found");
             }
-            return Ok(bookEvent);
+            var response = new
+            {
+                bookEvent.BookEventId,
+                bookEvent.BookTitle,
+                bookEvent.Description,
+                bookEvent.AboutOfBook,
+                bookEvent.BookUrl,
+            };
+            return Ok(response);
 
         }
 
         [HttpPut]
         [Route("EditBookEvent/{id}")]
-        public IActionResult Edit(int id, [FromForm] BookDTO bookDTO)
+        public IActionResult Edit(int id, [FromForm] UpdateBookDTO updateBookDTO)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -90,29 +98,31 @@ namespace Growell_API.Controllers
             if (existingBook == null)
                 return NotFound("The book with the specified ID does not exist.");
 
-            if (!string.IsNullOrWhiteSpace(bookDTO.BookTitle))
-                existingBook.BookTitle = bookDTO.BookTitle;
+            if (!string.IsNullOrWhiteSpace(updateBookDTO.BookTitle))
+                existingBook.BookTitle = updateBookDTO.BookTitle;
 
-            if (bookDTO.Description != null)
-                existingBook.Description = bookDTO.Description;
+            if (!string.IsNullOrWhiteSpace(updateBookDTO.Description))
+                existingBook.Description = updateBookDTO.Description;
 
-            if (bookDTO.AboutOfBook != null)
-                existingBook.AboutOfBook = bookDTO.AboutOfBook;
+            if (!string.IsNullOrWhiteSpace(updateBookDTO.AboutOfBook))
+                existingBook.AboutOfBook = updateBookDTO.AboutOfBook;
 
-            if (!string.IsNullOrWhiteSpace(bookDTO.BookUrl))
-                existingBook.BookUrl = bookDTO.BookUrl;
+            if (!string.IsNullOrWhiteSpace(updateBookDTO.BookUrl))
+                existingBook.BookUrl = updateBookDTO.BookUrl;
 
-            if (bookDTO.BookImage != null && bookDTO.BookImage.Length > 0)
+            if (updateBookDTO.BookImage != null && updateBookDTO.BookImage.Length > 0)
             {
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
-                if (!allowedExtensions.Contains(Path.GetExtension(bookDTO.BookImage.FileName).ToLower()))
+                var fileExtension = Path.GetExtension(updateBookDTO.BookImage.FileName).ToLower();
+
+                if (!allowedExtensions.Contains(fileExtension))
                     return BadRequest("Only JPG and PNG image files are allowed.");
 
-                string fileName = Guid.NewGuid().ToString() + Path.GetExtension(bookDTO.BookImage.FileName);
-                string folderName = Path.Combine("wwwroot", "images", "Books");
-                string filePath = Path.Combine(Directory.GetCurrentDirectory(), folderName, fileName);
+                string fileName = $"{Guid.NewGuid()}{fileExtension}";
+                string folderPath = Path.Combine("wwwroot", "images", "Books");
+                string filePath = Path.Combine(Directory.GetCurrentDirectory(), folderPath, fileName);
 
-                Directory.CreateDirectory(folderName);
+                Directory.CreateDirectory(folderPath);
 
                 try
                 {
@@ -124,9 +134,10 @@ namespace Growell_API.Controllers
                             System.IO.File.Delete(oldFilePath);
                         }
                     }
+
                     using (var stream = new FileStream(filePath, FileMode.Create))
                     {
-                        bookDTO.BookImage.CopyTo(stream);
+                        updateBookDTO.BookImage.CopyTo(stream);
                     }
 
                     existingBook.BookImagePath = $"/images/Books/{fileName}";
@@ -142,9 +153,6 @@ namespace Growell_API.Controllers
 
             return Ok(existingBook);
         }
-
-
-
 
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
