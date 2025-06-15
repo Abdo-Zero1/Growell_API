@@ -86,6 +86,7 @@ namespace Growell_API.Controllers
                 videoEvent.Description,
                 videoEvent.AboutOfVideo,
                 videoEvent.VideoUrl,
+                videoEvent.VideoImagePath
             };
             return Ok(response);
 

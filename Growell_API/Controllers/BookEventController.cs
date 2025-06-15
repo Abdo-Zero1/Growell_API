@@ -82,6 +82,7 @@ namespace Growell_API.Controllers
                 bookEvent.Description,
                 bookEvent.AboutOfBook,
                 bookEvent.BookUrl,
+                bookEvent.BookImagePath
             };
             return Ok(response);
 
