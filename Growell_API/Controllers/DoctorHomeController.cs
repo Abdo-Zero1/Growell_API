@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Models;
 using System.Linq;
+using System.Linq.Expressions;
 
 namespace Growell_API.Controllers
 {
@@ -13,11 +14,13 @@ namespace Growell_API.Controllers
     {
         private readonly IDoctorRepository doctorRepository;
         private readonly ITestRepository testRepository;
+        private readonly ICategoryRepository categoryRepository;
 
-        public DoctorHomeController(IDoctorRepository doctorRepository, ITestRepository testRepository)
+        public DoctorHomeController(IDoctorRepository doctorRepository, ITestRepository testRepository, ICategoryRepository categoryRepository)
         {
             this.doctorRepository = doctorRepository;
             this.testRepository = testRepository;
+            this.categoryRepository = categoryRepository;
         }
 
         [HttpGet]
@@ -44,7 +47,12 @@ namespace Growell_API.Controllers
         [HttpGet("{id}")]
         public IActionResult Details(int id)
         {
-            var doctor = doctorRepository.Get(Include: [t => t.Tests])
+            var doctor = doctorRepository.Get(
+                    Include: new Expression<Func<Doctor, object>>[]
+                    {
+                d => d.Categories 
+                    }
+                )
                 .Where(d => d.DoctorID == id)
                 .Select(d => new
                 {
@@ -65,7 +73,20 @@ namespace Growell_API.Controllers
                     Age = d.Age,
                     AboutOfKids = d.AboutOfKids,
                     TargetAgeGroup = d.TargetAgeGroup,
-                    Tests = d.Tests.Select(t => new { t.TestID, t.TestName }),
+                    Categories = d.Categories.Select(c => new
+                    {
+                        CategoryID = c.CategoryID,
+                        Name = c.Name,
+                        Description = c.Description,
+                        Tests = testRepository.Get(
+                            expression: t => t.CategoryID == c.CategoryID 
+                        )
+                        .Select(t => new
+                        {
+                            TestID = t.TestID,
+                            TestName = t.TestName
+                        }).ToList()
+                    }).ToList()
                 })
                 .FirstOrDefault();
 
@@ -75,6 +96,36 @@ namespace Growell_API.Controllers
             }
 
             return Ok(doctor);
+        }
+
+        [HttpGet("GetTestsByCategory/{categoryId}")]
+        public IActionResult GetTestsByCategory(int categoryId)
+        {
+            var category = categoryRepository.Get(
+                expression: c => c.CategoryID == categoryId
+            ).FirstOrDefault();
+
+            if (category == null)
+            {
+                return NotFound(new { Message = "Category not found" });
+            }
+
+            var tests = testRepository.Get(
+                expression: t => t.CategoryID == categoryId
+            )
+            .Select(t => new
+            {
+                TestID = t.TestID,
+                TestName = t.TestName,
+                Description = t.Description
+            }).ToList();
+
+            return Ok(new
+            {
+                CategoryID = category.CategoryID,
+                CategoryName = category.Name,
+                Tests = tests
+            });
         }
 
         //[HttpGet("api/photo-url")]

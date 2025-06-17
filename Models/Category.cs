@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -20,6 +21,11 @@ namespace Models
 
         [MaxLength(500, ErrorMessage = "Description cannot exceed 500 characters.")]
         public string? Description { get; set; }
+
+        [ForeignKey(nameof(Doctor))]
+        public int? DoctorID { get; set; }
+        [JsonIgnore]
+        public Doctor? Doctor { get; set; }
         [JsonIgnore]
         public ICollection<Test> Tests { get; set; } = new List<Test>();
 

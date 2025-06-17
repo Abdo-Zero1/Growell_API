@@ -1,78 +1,121 @@
 ﻿using DataAccess.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Models;
-using System.Data;
+using System.Linq.Expressions;
+using System.Security.Claims;
 using Utility;
 
 namespace Growell_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-   [Authorize(Roles = $"{SD.DoctorRole}")]
-
+   // [Authorize(Roles = $"{SD.DoctorRole}")]
     public class CategoryController : ControllerBase
     {
         private readonly ICategoryRepository categoryRepository;
         private readonly ITestRepository testRepository;
+        private readonly IDoctorRepository doctorRepository;
 
-        public CategoryController(ICategoryRepository categoryRepository, ITestRepository testRepository)
+        public CategoryController(ICategoryRepository categoryRepository, ITestRepository testRepository, IDoctorRepository doctorRepository)
         {
             this.categoryRepository = categoryRepository;
             this.testRepository = testRepository;
+            this.doctorRepository = doctorRepository;
         }
 
         [HttpGet]
         public ActionResult Index()
         {
-            var Category = categoryRepository.Get(Include: [t=>t.Tests]).ToList();
-            return Ok(Category);
-        }
-        
-
-        [HttpPost]
-        [Route("Create")]
-        public IActionResult Create([FromBody]Category category)
-        {
-            if (!ModelState.IsValid)
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int doctorId))
             {
-                return BadRequest(ModelState);
+                return Unauthorized(new { message = "Invalid token or DoctorID is missing." });
             }
 
-            categoryRepository.Create(category);
-            categoryRepository.Commit();
+            var categories = categoryRepository.Get(
+                Include: new Expression<Func<Category, object>>[] { t => t.Tests },
+                expression: c => c.DoctorID == doctorId
+            ).ToList();
 
-            return CreatedAtAction(nameof(GetCategory), new { CategoryId = category.CategoryID }, category);
+            if (!categories.Any())
+            {
+                return Ok(new { message = "No categories found for the current doctor." });
+            }
+
+            return Ok(categories);
+        }
+
+
+        [HttpPost("Create")]
+        public IActionResult Create([FromBody] Category category)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int doctorId))
+            {
+                return Unauthorized(new { message = "Invalid token or DoctorID is missing." });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { message = "Validation failed.", errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage) });
+            }
+
+            category.DoctorID = doctorId; 
+
+            try
+            {
+                categoryRepository.Create(category);
+                categoryRepository.Commit();
+
+                return CreatedAtAction(nameof(GetCategory), new { CategoryId = category.CategoryID }, category);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while creating the category.", error = ex.Message });
+            }
         }
 
         [HttpGet("{CategoryId}")]
         public IActionResult GetCategory(int CategoryId)
         {
-            var category = categoryRepository.GetOne( expression: e => e.CategoryID == CategoryId);
-            if (category != null)
-                return Ok(category); 
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int doctorId))
+            {
+                return Unauthorized(new { message = "Invalid token or DoctorID is missing." });
+            }
 
-            return NotFound(new { message = "Category not found." }); 
+            var category = categoryRepository.GetOne(expression: c => c.CategoryID == CategoryId && c.DoctorID == doctorId);
+            if (category == null)
+            {
+                return NotFound(new { message = "Category not found." });
+            }
+
+            return Ok(category);
         }
 
-        [HttpPut]
-        [Route("Edit")]
-        public IActionResult Edit([FromBody] Category category)
+        [HttpPut("Edit/{id}")]
+        public IActionResult Edit(int id, [FromBody] Category category)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int doctorId))
+            {
+                return Unauthorized(new { message = "Invalid token or DoctorID is missing." });
+            }
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(new
                 {
-                    message = "Invalid data.",
+                    message = "Validation failed.",
                     errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))
                 });
             }
 
-            var existingCategory = categoryRepository.GetOne(expression: e => e.CategoryID == category.CategoryID);
+            var existingCategory = categoryRepository.GetOne(expression: c => c.CategoryID == id && c.DoctorID == doctorId);
             if (existingCategory == null)
             {
-                return NotFound(new { message = "Category not found." });
+                return NotFound(new { message = "Category not found or you are not authorized to edit it." });
             }
 
             existingCategory.Name = category.Name;
@@ -80,8 +123,8 @@ namespace Growell_API.Controllers
 
             try
             {
-                categoryRepository.Edit(existingCategory); 
-                categoryRepository.Commit(); 
+                categoryRepository.Edit(existingCategory);
+                categoryRepository.Commit();
 
                 return Ok(new { message = "Category updated successfully.", category = existingCategory });
             }
@@ -91,19 +134,34 @@ namespace Growell_API.Controllers
             }
         }
 
-        [HttpDelete("{categoryId}")]
-        public IActionResult Delete(int categoryId)
+
+
+        [HttpDelete("{CategoryId}")]
+        public IActionResult Delete(int CategoryId)
         {
-            var category = categoryRepository.GetOne(expression: e => e.CategoryID == categoryId);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out int doctorId))
+            {
+                return Unauthorized(new { message = "Invalid token or DoctorID is missing." });
+            }
+
+            var category = categoryRepository.GetOne(expression: c => c.CategoryID == CategoryId && c.DoctorID == doctorId);
             if (category == null)
-                return NotFound(new { message = "Category not found." });
+            {
+                return NotFound(new { message = "Category not found or you are not authorized to delete it." });
+            }
 
-            categoryRepository.Delete(category);
-            categoryRepository.Commit();
+            try
+            {
+                categoryRepository.Delete(category);
+                categoryRepository.Commit();
 
-            return Ok(new { message = "Category deleted successfully." });
+                return Ok(new { message = "Category deleted successfully." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while deleting the category.", error = ex.Message });
+            }
         }
-
-
     }
 }
