@@ -20,7 +20,7 @@ namespace DataAccess
         public DbSet<Test> Tests { get; set; }
         public DbSet<TestResult> TestResults { get; set; }
        // public DbSet<User> Users { get; set; }
-        //public DbSet<GameEvent> gameEvents  { get; set; }
+        public DbSet<Booking>  bookings { get; set; }
         public DbSet<VideoEvent> videoEvents   { get; set; }
         public DbSet<BookEvent> bookEvents    { get; set; }
         public DbSet<ContactUs> ContactUs { get; set; }

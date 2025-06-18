@@ -117,6 +117,7 @@ namespace Growell_API
             builder.Services.AddScoped<IDevelopmentStatusRepository, DevelopmentStatusRepository>();
             builder.Services.AddScoped<IContactUsRepository, ContactUsRepository>();
             builder.Services.AddScoped<ISessionRepository, SessionRepository>();
+            builder.Services.AddScoped<IBookingRepository, BookingRepository>();
             var app = builder.Build();
             if (app.Environment.IsDevelopment())
             {

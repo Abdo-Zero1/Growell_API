@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Models;
 using System.Linq.Expressions;
+using System.Numerics;
 using System.Security.Claims;
 using Utility;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Growell_API.Controllers
 {
@@ -32,18 +34,52 @@ namespace Growell_API.Controllers
             {
                 return Unauthorized(new { message = "Invalid token or DoctorID is missing." });
             }
+            var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == doctorId);
+            if (doctor == null)
+            {
+                return NotFound(new { message = "Doctor not found." });
+            }
 
             var categories = categoryRepository.Get(
                 Include: new Expression<Func<Category, object>>[] { t => t.Tests },
                 expression: c => c.DoctorID == doctorId
             ).ToList();
+            if (!categories.Any())
+            {
+                return Ok(new
+                {
+                    message = "No category found for the current doctor.",
+                    Doctor = new
+                    {
+                        doctor.DoctorID,
+                        doctor.FirstName,
+                        doctor.LastName,
+                        doctor.Bio,
+                        doctor.ImgUrl
+                    }
+                });
+            }
+            var result = categories.Select(category => new
+            {
+                CategoryID = category.CategoryID,
+                Name = category.Name,
+                Description = category.Description,
+                Doctor = new
+                {
+                    DoctorID = category.DoctorID,
+                    DoctorName = category.Doctor != null ? $"{category.Doctor.FirstName} {category.Doctor.LastName}" : null,
+                    ImageUrl = category.Doctor?.ImgUrl,
+                    Bio = category.Doctor?.Bio,
+                }
+            });
+
 
             if (!categories.Any())
             {
                 return Ok(new { message = "No categories found for the current doctor." });
             }
 
-            return Ok(categories);
+            return Ok(result);
         }
 
 
