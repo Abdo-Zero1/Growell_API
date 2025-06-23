@@ -22,19 +22,15 @@ namespace Models
         [JsonIgnore]
         public ApplicationUser? User { get; set; }
 
-        [ForeignKey("TestResult")]
-        public int? TestResultID { get; set; }
-        [JsonIgnore]
-        public TestResult? TestResult { get; set; }
-
         public DateTime AppointmentDate { get; set; }
         public string Notes { get; set; }
         public bool IsConfirmed { get; set; } = false;
         public DateTime CreatedAt { get; set; }
 
-        // الحقول الجديدة
-        public string CreatedByUserName { get; set; } = string.Empty; // اسم المستخدم الذي أنشأ الحجز
-        public string TestDoctorName { get; set; } = string.Empty; // اسم الدكتور صاحب التقرير
-        public string BookingDoctorName { get; set; } = string.Empty; // اسم الدكتور الخاص بالحجز
+        public string TastName { get; set; }
+        public int Score { get; set; } 
+
+        public string CreatedByUserName { get; set; } = string.Empty; 
+        public string BookingDoctorName { get; set; } = string.Empty; 
     }
 }

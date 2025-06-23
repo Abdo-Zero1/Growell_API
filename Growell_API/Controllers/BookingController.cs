@@ -5,6 +5,10 @@ using Models;
 using DataAccess.Repository;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
+using Newtonsoft.Json;
+using System.Linq.Expressions;
+
+
 
 namespace Growell_API.Controllers
 {
@@ -18,11 +22,13 @@ namespace Growell_API.Controllers
         private readonly ITestResultRepository testResultRepository;
         private readonly IQuestionRepository questionRepository;
         private readonly ITestRepository testRepository;
+        private readonly ILogger<BookingController> logger;
 
         public BookingController(IBookingRepository bookingRepository,
             IDoctorRepository doctorRepository,
             UserManager<ApplicationUser> userManager,
-            ITestResultRepository testResultRepository, IQuestionRepository questionRepository, ITestRepository testRepository )
+            ITestResultRepository testResultRepository, IQuestionRepository questionRepository,
+            ITestRepository testRepository, ILogger<BookingController> logger )
         {
             this.bookingRepository = bookingRepository;
             this.doctorRepository = doctorRepository;
@@ -30,6 +36,7 @@ namespace Growell_API.Controllers
             this.testResultRepository = testResultRepository;
             this.questionRepository = questionRepository;
             this.testRepository = testRepository;
+            this.logger = logger;
         }
 
         [HttpGet("GetAllBookings")]
@@ -49,7 +56,9 @@ namespace Growell_API.Controllers
                 return Unauthorized(new { message = "Doctor not found." });
             }
 
-            var bookings = bookingRepository.Get(expression: b => b.DoctorID == doctor.DoctorID);
+            var bookings = bookingRepository.Get(
+                new Expression<Func<Booking, object>>[] { b => b.User, b => b.Doctor }, 
+                b => b.DoctorID == doctor.DoctorID);
 
             if (!bookings.Any())
             {
@@ -60,126 +69,71 @@ namespace Growell_API.Controllers
             {
                 b.BookingID,
                 DoctorName = $"{b.Doctor.FirstName} {b.Doctor.LastName}",
-                PatientName = b.User?.UserName,
+                PatientName = b.User?.UserName ?? "Unknown",
                 AppointmentDate = b.AppointmentDate,
                 Notes = b.Notes,
-                IsConfirmed = b.IsConfirmed
+                IsConfirmed = b.IsConfirmed,
+                TestName = b.TastName,
+                Score = b.Score,
+
             });
 
             return Ok(result);
         }
 
+        //[HttpPost("CreateBooking")]
+        //public async Task<IActionResult> CreateBooking([FromBody] Booking booking)
+        //{
+        //    try
+        //    {
+        //        if (!ModelState.IsValid)
+        //            return BadRequest(ModelState);
 
-        [HttpPost("CreateBooking")]
-        public async Task<IActionResult> CreateBooking([FromBody] Booking booking)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+        //        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        //        if (string.IsNullOrEmpty(userId))
+        //            return Unauthorized(new { message = "Authorization error. User ID not found in token." });
 
-            var bookingDoctor = doctorRepository.Get(expression: d => d.DoctorID == booking.DoctorID).FirstOrDefault();
-            if (bookingDoctor == null)
-                return NotFound(new { message = "Doctor not found for this booking." });
+        //        var currentUser = await userManager.FindByIdAsync(userId);
+        //        if (currentUser == null)
+        //            return BadRequest(new { message = "User ID does not exist in the database." });
 
-            var currentUser = await userManager.FindByIdAsync(booking.UserID);
-            if (currentUser == null)
-                return NotFound(new { message = "User not found." });
+        //        var bookingDoctor = doctorRepository.Get(expression: d => d.DoctorID == booking.DoctorID).FirstOrDefault();
+        //        if (bookingDoctor == null)
+        //            return NotFound(new { message = "Doctor not found for this booking." });
 
-            var testResult = booking.TestResultID.HasValue
-                ? testResultRepository.Get(expression: r => r.TestResultID == booking.TestResultID).FirstOrDefault()
-                : null;
+        //        booking.UserID = userId; 
+        //        booking.CreatedAt = DateTime.Now;
+        //        booking.IsConfirmed = false;
+        //        booking.BookingDoctorName = $"{bookingDoctor.FirstName} {bookingDoctor.LastName}";
+        //        booking.CreatedByUserName = currentUser.UserName;
+        //        booking.Notes = booking.Notes ?? string.Empty; 
 
-            string testDoctorName = "Not available";
-            string testName = "Not available";
-            int? score = null;
-            double? percentage = null;
+        //        bookingRepository.Create(booking);
+        //        bookingRepository.Commit();
 
-            if (testResult != null)
-            {
-                if (testResult.DoctorID.HasValue)
-                {
-                    var testDoctor = doctorRepository.Get(expression: d => d.DoctorID == testResult.DoctorID).FirstOrDefault();
-                    if (testDoctor != null)
-                    {
-                        testDoctorName = $"{testDoctor.FirstName} {testDoctor.LastName}";
-                    }
-                }
+        //        var response = new DTOs.BookingDTO
+        //        {
+        //            BookingID = booking.BookingID,
+        //            UserID = booking.UserID,
+        //            CreatedByUserName = booking.CreatedByUserName,
+        //            TestDoctorName = booking.TestDoctorName,
+        //            BookingDoctorName = booking.BookingDoctorName,
+        //            AppointmentDate = booking.AppointmentDate,
+        //            IsConfirmed = booking.IsConfirmed,
+        //            Notes = booking.Notes
+        //        };
 
-                // تفاصيل الاختبار
-                var test = testRepository.GetOne(expression: t => t.TestID == testResult.TestID);
-                if (test != null)
-                {
-                    testName = test.TestName;
-
-                    var totalQuestions = questionRepository.Get(expression: q => q.TestID == test.TestID).Count();
-                    percentage = totalQuestions > 0 ? (double)testResult.Score / totalQuestions * 100 : 0;
-                    score = testResult.Score;
-                }
-            }
-
-            // إعداد معلومات الحجز
-            booking.CreatedAt = DateTime.Now;
-            booking.IsConfirmed = false;
-            booking.BookingDoctorName = $"{bookingDoctor.FirstName} {bookingDoctor.LastName}";
-            booking.TestDoctorName = testDoctorName;
-            booking.CreatedByUserName = currentUser.UserName;
-
-            // تخزين الحجز
-            bookingRepository.Create(booking);
-            bookingRepository.Commit();
-
-            // إرجاع الرد
-            return Ok(new
-            {
-                message = "Booking created successfully",
-                bookingId = booking.BookingID,
-                bookingDoctorName = booking.BookingDoctorName,
-                testDoctorName = booking.TestDoctorName,
-                createdByUserName = booking.CreatedByUserName,
-                appointmentDate = booking.AppointmentDate,
-                isConfirmed = booking.IsConfirmed,
-                testResult = new
-                {
-                    testName = testName,
-                    score = score,
-                    percentage = percentage,
-                    classificationEn = percentage.HasValue ? GetDelayClassificationEn(percentage.Value) : null,
-                    classificationAr = percentage.HasValue ? GetDelayClassificationAr(percentage.Value) : null
-                }
-            });
-        }
-
-
-
-        private string GetDelayClassificationEn(double percentage)
-        {
-            if (percentage == 100)
-                return "No Delay";
-            else if (percentage >= 70)
-                return "Mild Delay";
-            else if (percentage >= 50)
-                return "Mild to moderate delay detected. It is advisable to consult a doctor to prevent worsening";
-            else
-                return "Severe delay detected. It is highly recommended to contact a doctor immediately";
-        }
-
-        private string GetDelayClassificationAr(double percentage)
-        {
-            if (percentage == 100)
-                return "لا يوجد تأخر";
-            else if (percentage >= 70)
-                return "تأخر خفيف";
-            else if (percentage >= 50)
-                return "تم الكشف عن تأخر خفيف إلى متوسط. من الأفضل استشارة طبيب لتجنب تدهور الحالة";
-            else
-                return "تم الكشف عن تأخر شديد. يُنصح بشدة بالتواصل مع طبيب فوراً";
-        }
-
-
-
-
-
-
-
+        //        return Ok(response);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, new
+        //        {
+        //            message = "An error occurred while creating the booking.",
+        //            details = ex.InnerException?.Message ?? ex.Message
+        //        });
+        //    }
+        //}
 
 
     }

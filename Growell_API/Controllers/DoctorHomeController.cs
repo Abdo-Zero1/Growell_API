@@ -1,10 +1,12 @@
 ﻿using DataAccess.Repository;
 using DataAccess.Repository.IRepository;
+using Growell_API.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Models;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Security.Claims;
 
 namespace Growell_API.Controllers
 {
@@ -12,12 +14,14 @@ namespace Growell_API.Controllers
     [ApiController]
     public class DoctorHomeController : ControllerBase
     {
+        private readonly IBookingRepository bookingRepository;
         private readonly IDoctorRepository doctorRepository;
         private readonly ITestRepository testRepository;
         private readonly ICategoryRepository categoryRepository;
 
-        public DoctorHomeController(IDoctorRepository doctorRepository, ITestRepository testRepository, ICategoryRepository categoryRepository)
+        public DoctorHomeController(IBookingRepository bookingRepository,IDoctorRepository doctorRepository, ITestRepository testRepository, ICategoryRepository categoryRepository)
         {
+            this.bookingRepository = bookingRepository;
             this.doctorRepository = doctorRepository;
             this.testRepository = testRepository;
             this.categoryRepository = categoryRepository;
@@ -97,6 +101,66 @@ namespace Growell_API.Controllers
 
             return Ok(doctor);
         }
+
+        [Authorize]
+        [HttpPost("{doctorId}/book")]
+        public async Task<IActionResult> BookDoctor(int doctorId, [FromBody] BookingDTO request)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized(new { Message = "User ID not found in token." });
+
+                var userName = User.FindFirstValue(ClaimTypes.Name);
+                if (string.IsNullOrEmpty(userName))
+                    return Unauthorized(new { Message = "User name not found in token." });
+
+                var doctor = doctorRepository.GetOne(expression: d => d.DoctorID == doctorId);
+                if (doctor == null)
+                    return NotFound(new { Message = "Doctor not found." });
+
+                var booking = new Booking
+                {
+                    UserID = userId,
+                    CreatedByUserName = userName,
+                    DoctorID = doctorId,
+                    CreatedAt = DateTime.Now,
+                    IsConfirmed = false,
+                    Notes = request.Notes ?? string.Empty,
+                    BookingDoctorName = $"{doctor.FirstName} {doctor.LastName}",
+                    TastName = request.TestName,
+                    Score = request.Score,
+                };
+
+                bookingRepository.Create(booking);
+                bookingRepository.Commit();
+
+                return Ok(new
+                {
+                    Message = "Booking successful",
+                    BookingID = booking.BookingID,
+                    DoctorName = booking.BookingDoctorName,
+                    CreatedAt = booking.CreatedAt,
+                    Notes = booking.Notes,
+                    UserName = booking.CreatedByUserName,
+                    TestName = booking.TastName,
+                    Score = booking.Score
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Message = "An error occurred while creating the booking.",
+                    Details = ex.InnerException?.Message ?? ex.Message
+                });
+            }
+        }
+
+
+
+
 
         [HttpGet("GetTestsByCategory/{categoryId}")]
         public IActionResult GetTestsByCategory(int categoryId)
