@@ -68,7 +68,10 @@ namespace Growell_API.Controllers
             var result = bookings.Select(b => new
             {
                 b.BookingID,
+                ImageUser = b.User?.ProfilePicturePath,
+                ImageDoctor = b.Doctor?.ImgUrl,
                 DoctorName = $"{b.Doctor.FirstName} {b.Doctor.LastName}",
+                aboutME = b.Doctor?.AboutMe ?? "No information available",
                 PatientName = b.User?.UserName ?? "Unknown",
                 AppointmentDate = b.AppointmentDate,
                 Notes = b.Notes,
