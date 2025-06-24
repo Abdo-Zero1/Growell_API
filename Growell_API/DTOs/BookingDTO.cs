@@ -16,6 +16,8 @@ namespace Growell_API.DTOs
         public string TestName { get; set; } = string.Empty;    
         public int Score { get; set; } 
         public DateTime AppointmentDate { get; set; }
+        public DateTime CreatedAt { get; set; }
+
         public bool IsConfirmed { get; set; }
         public string Notes { get; set; } = string.Empty;
     }

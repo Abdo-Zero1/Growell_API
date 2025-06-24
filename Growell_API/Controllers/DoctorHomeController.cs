@@ -3,6 +3,7 @@ using DataAccess.Repository.IRepository;
 using Growell_API.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using Models;
 using System.Linq;
 using System.Linq.Expressions;
@@ -131,6 +132,7 @@ namespace Growell_API.Controllers
                     BookingDoctorName = $"{doctor.FirstName} {doctor.LastName}",
                     TastName = request.TestName,
                     Score = request.Score,
+                    AppointmentDate = request.AppointmentDate != default ? request.AppointmentDate : DateTime.Now.AddDays(1) 
                 };
 
                 bookingRepository.Create(booking);
@@ -145,7 +147,10 @@ namespace Growell_API.Controllers
                     Notes = booking.Notes,
                     UserName = booking.CreatedByUserName,
                     TestName = booking.TastName,
-                    Score = booking.Score
+                    Score = booking.Score,
+                    AppointmentDate = booking.AppointmentDate,
+                    IsConfirmed = booking.IsConfirmed ? "Confirmed" : "Pending"
+
                 });
             }
             catch (Exception ex)

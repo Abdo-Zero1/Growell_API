@@ -57,7 +57,7 @@ namespace Growell_API.Controllers
 
             if (userDTO.ProfilePicturePath == null)
             {
-                user.ProfilePicturePath = "/images/images.jpg"; 
+                user.ProfilePicturePath = "/images/images.jpeg"; 
             }
             else
             {
@@ -218,23 +218,27 @@ namespace Growell_API.Controllers
             if (user == null)
                 return NotFound(new { error = "Not Found", message = "The requested user does not exist." });
 
-            if (!string.IsNullOrEmpty(profileDTO.UserName))user.UserName = profileDTO.UserName;
-            if (!string.IsNullOrEmpty(profileDTO.Email))user.Email = profileDTO.Email;
-            if (!string.IsNullOrEmpty(profileDTO.PhoneNumber))user.PhoneNumber = profileDTO.PhoneNumber;
+            if (!string.IsNullOrEmpty(profileDTO.UserName)) user.UserName = profileDTO.UserName;
+            if (!string.IsNullOrEmpty(profileDTO.Email)) user.Email = profileDTO.Email;
+            if (!string.IsNullOrEmpty(profileDTO.PhoneNumber)) user.PhoneNumber = profileDTO.PhoneNumber;
             if (!string.IsNullOrEmpty(profileDTO.Adderss)) user.Adderss = profileDTO.Adderss;
-            
 
             if (profileDTO.ProfilePicture != null && profileDTO.ProfilePicture.Length > 0)
             {
                 try
                 {
+                    Console.WriteLine($"Current Profile Picture Path: {user.ProfilePicturePath}");
+
                     if (!string.IsNullOrEmpty(user.ProfilePicturePath) &&
-                        !user.ProfilePicturePath.Equals("/images/Profile/images.jpg", StringComparison.OrdinalIgnoreCase))
+                        !user.ProfilePicturePath.Trim().Equals("/images/images.jpeg", StringComparison.OrdinalIgnoreCase))
                     {
                         var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", user.ProfilePicturePath.TrimStart('/'));
+                        Console.WriteLine($"Old File Path: {oldFilePath}");
+
                         if (System.IO.File.Exists(oldFilePath))
                         {
                             System.IO.File.Delete(oldFilePath);
+                            Console.WriteLine("Old profile picture deleted.");
                         }
                     }
 
@@ -242,6 +246,7 @@ namespace Growell_API.Controllers
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine($"Error while updating profile picture: {ex.Message}");
                     return BadRequest(new { error = "Image Upload Error", message = ex.Message });
                 }
             }
@@ -298,6 +303,7 @@ namespace Growell_API.Controllers
 
 
 
+
         [HttpDelete("DeleteAccount")]
         [Authorize(Roles = $"{SD.AdminRole},{SD.DoctorRole},{SD.UserRole}")]
 
@@ -335,6 +341,20 @@ namespace Growell_API.Controllers
                         testResultRepository.Delete(testResult);
                     }
                     testResultRepository.Commit();
+                }
+
+                if(!string.IsNullOrEmpty(user.ProfilePicturePath))
+                {
+                    var picturePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot","images","Profile", user.ProfilePicturePath.TrimStart('/'));
+                    if (System.IO.File.Exists(picturePath))
+                    {
+                        System.IO.File.Delete(picturePath);
+                        logger.LogInformation("Profile picture for user {UserId} was successfully deleted.", userId);
+                    }
+                    else
+                    {
+                        logger.LogWarning("Profile picture for user {UserId} not found at path: {PicturePath}", userId, picturePath);
+                    }
                 }
 
                 var result = await userManager.DeleteAsync(user);
