@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 using Newtonsoft.Json;
 using System.Linq.Expressions;
+using Microsoft.AspNetCore.Authorization;
 
 
 
@@ -83,61 +84,46 @@ namespace Growell_API.Controllers
 
             return Ok(result);
         }
+        [Authorize]
+        [HttpDelete("DeleteBooking/{id}")]
+        public IActionResult delete(int id)
+        {
+            try
+            {
+                var email = User.FindFirstValue(ClaimTypes.Email);
 
-        //[HttpPost("CreateBooking")]
-        //public async Task<IActionResult> CreateBooking([FromBody] Booking booking)
-        //{
-        //    try
-        //    {
-        //        if (!ModelState.IsValid)
-        //            return BadRequest(ModelState);
+                if (string.IsNullOrEmpty(email))
+                {
+                    return Unauthorized(new { message = "Invalid token or email missing." });
+                }
 
-        //        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        //        if (string.IsNullOrEmpty(userId))
-        //            return Unauthorized(new { message = "Authorization error. User ID not found in token." });
+                var doctor = doctorRepository.GetOne(expression: d => d.Email == email);
 
-        //        var currentUser = await userManager.FindByIdAsync(userId);
-        //        if (currentUser == null)
-        //            return BadRequest(new { message = "User ID does not exist in the database." });
+                if (doctor == null)
+                {
+                    return Unauthorized(new { message = "Doctor not found." });
+                }
 
-        //        var bookingDoctor = doctorRepository.Get(expression: d => d.DoctorID == booking.DoctorID).FirstOrDefault();
-        //        if (bookingDoctor == null)
-        //            return NotFound(new { message = "Doctor not found for this booking." });
+                var booking = bookingRepository.GetOne(expression: b => b.BookingID == id);
+                if (booking == null)
+                {
+                    return NotFound(new { message = "Booking not found." });
+                }
+                if(doctor.DoctorID != booking.DoctorID )
+                {
+                    return Unauthorized("You can only delete your own bookings.");
+                }
+                bookingRepository.Delete(booking);
+                bookingRepository.Commit();
+                return Ok(new { message = "Booking deleted successfully." });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error deleting booking with ID {BookingId}", id);
+                return StatusCode(500, new { message = "An error occurred while deleting the booking.", details = ex.Message });
+            }
+        }
 
-        //        booking.UserID = userId; 
-        //        booking.CreatedAt = DateTime.Now;
-        //        booking.IsConfirmed = false;
-        //        booking.BookingDoctorName = $"{bookingDoctor.FirstName} {bookingDoctor.LastName}";
-        //        booking.CreatedByUserName = currentUser.UserName;
-        //        booking.Notes = booking.Notes ?? string.Empty; 
-
-        //        bookingRepository.Create(booking);
-        //        bookingRepository.Commit();
-
-        //        var response = new DTOs.BookingDTO
-        //        {
-        //            BookingID = booking.BookingID,
-        //            UserID = booking.UserID,
-        //            CreatedByUserName = booking.CreatedByUserName,
-        //            TestDoctorName = booking.TestDoctorName,
-        //            BookingDoctorName = booking.BookingDoctorName,
-        //            AppointmentDate = booking.AppointmentDate,
-        //            IsConfirmed = booking.IsConfirmed,
-        //            Notes = booking.Notes
-        //        };
-
-        //        return Ok(response);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(500, new
-        //        {
-        //            message = "An error occurred while creating the booking.",
-        //            details = ex.InnerException?.Message ?? ex.Message
-        //        });
-        //    }
-        //}
-
-
+        
     }
 }

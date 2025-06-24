@@ -127,7 +127,7 @@ namespace Growell_API.Controllers
                     CreatedByUserName = userName,
                     DoctorID = doctorId,
                     CreatedAt = DateTime.Now,
-                    IsConfirmed = false,
+                    IsConfirmed = request.IsConfirmed,
                     Notes = request.Notes ?? string.Empty,
                     BookingDoctorName = $"{doctor.FirstName} {doctor.LastName}",
                     TastName = request.TestName,
