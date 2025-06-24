@@ -24,7 +24,7 @@ namespace Models
 
         public DateTime AppointmentDate { get; set; }
         public string Notes { get; set; }
-        public bool IsConfirmed { get; set; } = false;
+        public bool IsConfirmed { get; set; } 
         public DateTime CreatedAt { get; set; }
 
         public string TastName { get; set; }
