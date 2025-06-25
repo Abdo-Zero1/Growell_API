@@ -12,6 +12,7 @@ namespace Models
         public string Adderss { get; set; }
         public string ProfilePicturePath { get; set; }
         public string PhoneNumber { get; set; }
+        public string Gender { get; set; }
 
 
         public ICollection<TestResult> TestResults { get; set; }

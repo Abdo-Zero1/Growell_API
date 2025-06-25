@@ -79,6 +79,7 @@ namespace Growell_API.Controllers
                 IsConfirmed = b.IsConfirmed,
                 TestName = b.TastName,
                 Score = b.Score,
+                gender = b.User.Gender
 
             });
 

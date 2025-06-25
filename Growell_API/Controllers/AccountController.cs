@@ -200,7 +200,8 @@ namespace Growell_API.Controllers
                 user.Email,
                 user.PhoneNumber,
                 user.Adderss,
-                ProfilePicturePath = user.ProfilePicturePath 
+                ProfilePicturePath = user.ProfilePicturePath,
+                user.Gender
             };
 
             return Ok(userData);

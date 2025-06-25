@@ -27,6 +27,8 @@ namespace Growell_API.DTOs
         [RegularExpression(@"^(\+20\d{10}|01\d{9}|\+?[1-9]\d{1,14})$", ErrorMessage = "Invalid phone number format. Must be an Egyptian or international number.")]
 
         public string PhoneNumber { get; set; }
+        [Required(ErrorMessage ="Gender Is Required")]
+        public string Gender { get; set; }
 
         [Required(ErrorMessage = "New password is required.")]
         [MinLength(8, ErrorMessage = "New password must be at least 8 characters long.")]
