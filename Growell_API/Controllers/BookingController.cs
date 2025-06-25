@@ -63,8 +63,22 @@ namespace Growell_API.Controllers
 
             if (!bookings.Any())
             {
-                return NotFound(new { message = "No bookings found for the doctor." });
+                return Ok(new
+                {
+                    message = "No bookings found for the current doctor.",
+                    Doctor = new
+                    {
+                        doctor.DoctorID,
+                        doctor.FirstName,
+                        doctor.LastName,
+                        doctor.Bio,
+                        doctor.ImgUrl
+                    }
+                });
+
             }
+
+
 
             var result = bookings.Select(b => new
             {
