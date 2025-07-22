@@ -33,7 +33,7 @@ The backend is structured using a *3-Tier Architecture*, which separates the app
 3. *Data Access Layer*  
    - Handles communication with the database using Entity Framework Core.
 
-### 🧩 Design Pattern: IRepositry Pattern
+### 🧩 Design Pattern: Repositry Pattern
 
 We applied the *IRepository Design Pattern* to abstract and decouple the data access layer from the business logic.  
 This promotes cleaner code, easier testing, and better maintainability.
@@ -46,7 +46,7 @@ The backend was built with:
 
 - C# and ASP.NET Core Web API (RESTFUL API)
 - 3-Tier Architecture (Presentation, Business, Data Access)  
-- IRepository Design Pattern  
+- Repository Design Pattern  
 - Entity Framework Core (EF Core)  
 - SQL Server  
 - JWT for authentication  
